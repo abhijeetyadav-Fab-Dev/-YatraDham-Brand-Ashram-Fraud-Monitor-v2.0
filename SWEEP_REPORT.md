@@ -1,4 +1,4 @@
-# YatraDham Brand & Ashram Fraud Monitor — Sweep Report v2.0
+# YatraDham Brand & Ashram Fraud Monitor — Sweep Report v2.1
 
 **Sweep completed:** 2026-09-10T11:45:31.483786+00:00 · **Runtime:** 27.36s
 **Candidates Tested:** 250 · **Hosts Examined:** 125

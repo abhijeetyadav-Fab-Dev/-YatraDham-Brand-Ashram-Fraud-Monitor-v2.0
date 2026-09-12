@@ -139,7 +139,7 @@ class TakedownGenerator:
                 f"The domain is impersonating '{inst_name}' and defrauding Indian pilgrims by collecting fraudulent room booking "
                 f"deposits. We request immediate DNS hold/suspension under the .IN Registry Anti-Abuse Policy to protect the general public.\n\n"
                 f"Technical details: IP: {ip} | Host: {hosting_provider} | Registered: {created_date}\n\n"
-                f"Formal NCRP reference is being forwarded to Gujarat Police Cyber Crime Cell."
+                f"Formal NCRP reference has been logged under Initiative from YatraDham.Org."
             )
 
         # 6. NPCI Bank / UPI Freeze Request

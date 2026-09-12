@@ -93,6 +93,7 @@ class TestServerAPI(unittest.TestCase):
         html = resp.text
         self.assertIn("Initiative from YatraDham.Org", html)
         self.assertIn("YatraDham Brand & Ashram Fraud Monitor", html)
+        self.assertIn("v2.1", html)
         self.assertNotIn("Gujarat Police", html)
         self.assertIn("btn-debug-toggle", html)
         self.assertIn("debug-drawer", html)

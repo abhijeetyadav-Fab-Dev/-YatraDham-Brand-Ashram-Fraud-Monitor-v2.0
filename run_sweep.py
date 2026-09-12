@@ -161,7 +161,7 @@ class FraudSweepRunner:
         """Runs the complete 4+ channel parallel sweep and enriches findings."""
         start_time = time.time()
         print(f"\n=======================================================")
-        print(f"🚀 Launching YatraDham Brand & Ashram Fraud Monitor v2.0")
+        print(f"🚀 Launching YatraDham Brand & Ashram Fraud Monitor v2.1")
         print(f"🕒 Timestamp: {datetime.now(timezone.utc).isoformat()} UTC")
         print(f"⚡ Mode: {'QUICK (Priority Hotspots)' if quick else 'FULL (Comprehensive)'}")
         print(f"=======================================================\n")
@@ -338,7 +338,7 @@ class FraudSweepRunner:
         owned = [f for f in findings if f.get("risk_band") == "BRAND-OWNED"]
 
         lines = [
-            "# YatraDham Brand & Ashram Fraud Monitor — Sweep Report v2.0",
+            "# YatraDham Brand & Ashram Fraud Monitor — Sweep Report v2.1",
             "",
             f"**Sweep completed:** {payload.get('generated_at')} · **Runtime:** {payload.get('duration_s')}s",
             f"**Candidates Tested:** {payload.get('candidates_tested')} · **Hosts Examined:** {payload.get('hosts_examined')}",
