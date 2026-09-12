@@ -11,7 +11,11 @@ import ssl
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
-from PIL import Image, ImageDraw, ImageFont
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    HAS_PILLOW = True
+except Exception:
+    HAS_PILLOW = False
 
 logger = logging.getLogger("yatradham-evidence-capture")
 
@@ -110,6 +114,10 @@ class EvidenceCapture:
         """
         Generates a high-contrast forensic evidence image card for FIR exhibits using Pillow.
         """
+        if not HAS_PILLOW:
+            logger.info("Pillow is not installed; skipping PNG exhibit generation.")
+            return ""
+
         host = finding.get("host", "unknown").replace("/", "_").replace(":", "_")
         now_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         img_filename = f"evidence_card_{host}_{now_str}.png"
