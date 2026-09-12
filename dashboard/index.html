@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YatraDham Digital Trust & Brand Fraud Monitor</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090d14;
+  --panel: #111726;
+  --panel2: #161e31;
+  --panel3: #1d273f;
+  --line: #222d44;
+  --line-strong: #2f3e5e;
+  --ink: #f0f4fc;
+  --muted: #94a3b8;
+  --dim: #64748b;
+  --saffron: #ff9c33;
+  --saffron-glow: rgba(255, 156, 51, 0.15);
+  --crit: #ff4458;
+  --crit-bg: rgba(255, 68, 88, 0.12);
+  --high: #ff8533;
+  --high-bg: rgba(255, 133, 51, 0.12);
+  --med: #f5b041;
+  --med-bg: rgba(245, 176, 65, 0.12);
+  --low: #38bdf8;
+  --low-bg: rgba(56, 189, 248, 0.12);
+  --ok: #10b981;
+  --ok-bg: rgba(16, 185, 129, 0.12);
+  --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--saffron); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { max-width: 1400px; margin: 0 auto; padding: 24px 24px 80px; }
+
+/* Top Server Status Banner */
+.server-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 16px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.server-status { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.server-status.live { color: var(--ok); }
+.server-status.offline { color: var(--med); }
+.server-actions { display: flex; align-items: center; gap: 10px; }
+.server-link { color: var(--muted); text-decoration: none; font-weight: 500; font-size: 12px; }
+.server-link:hover { color: var(--saffron); }
+
+/* Debug Mode & Diagnostics Drawer */
+.debug-btn {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+.debug-btn:hover { background: rgba(239, 68, 68, 0.25); border-color: #ef4444; }
+.debug-btn.active {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+.debug-drawer {
+  background: #090d14;
+  border: 1px dashed rgba(239, 68, 68, 0.6);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+.debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  color: #fca5a5;
+  font-weight: 700;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.debug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.debug-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.debug-card h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.debug-card .val {
+  font-size: 12px;
+  color: #f3f4f6;
+  line-height: 1.5;
+  word-break: break-all;
+}
+.debug-trace-box {
+  background: #050810;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.6;
+}
+
+/* Header */
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+.brand-box { display: flex; align-items: center; gap: 14px; }
+.shield-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--saffron), #e65100);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  box-shadow: 0 0 20px rgba(255, 156, 51, 0.35);
+  flex-shrink: 0;
+}
+h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.sub { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.police-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 156, 51, 0.1);
+  color: var(--saffron);
+  border: 1px solid rgba(255, 156, 51, 0.25);
+  padding: 1px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.header-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.stamp { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+.header-btns { display: flex; gap: 8px; margin-top: 4px; }
+
+/* Trigger Sweep Button */
+.sweep-trigger-btn {
+  background: linear-gradient(135deg, var(--saffron), #ea580c);
+  color: #0c1017;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(255, 156, 51, 0.3);
+  transition: transform 0.15s, opacity 0.15s;
+}
+.sweep-trigger-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.sweep-trigger-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Live Progress Banner */
+#sweep-progress-banner {
+  background: var(--panel2);
+  border: 1px solid var(--saffron);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: none;
+  animation: fadeIn 0.2s;
+}
+.progress-bar-bg { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+.progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--saffron), #ea580c); transition: width 0.3s; }
+
+/* KPI Cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 26px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+.card .k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); }
+.card .v { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; margin: 4px 0 2px; }
+.card .n { font-size: 12px; color: var(--muted); }
+.v.crit { color: var(--crit); text-shadow: 0 0 12px rgba(255, 68, 88, 0.4); }
+.v.high { color: var(--high); }
+.v.ok { color: var(--ok); }
+.v.saffron { color: var(--saffron); }
+
+/* Quick Scanner Widget */
+.scanner-box {
+  background: linear-gradient(180deg, var(--panel), var(--panel2));
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+.scanner-box h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.scanner-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.scanner-input {
+  flex: 1;
+  min-width: 280px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px 14px;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.scanner-input:focus { outline: none; border-color: var(--saffron); }
+.scanner-btn {
+  background: var(--saffron);
+  color: #0c1017;
+  font-weight: 700;
+  border: none;
+  border-radius: 9px;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.scanner-btn:hover { opacity: 0.9; }
+.scanner-result { margin-top: 14px; padding: 14px 18px; border-radius: 9px; font-size: 13px; display: none; }
+
+/* Tabs & Controls */
+.nav-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+.tab-btn.active { color: var(--saffron); border-bottom-color: var(--saffron); }
+
+.controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.search-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--ink);
+  font-size: 13px;
+  width: 280px;
+}
+.search-box:focus { outline: none; border-color: var(--saffron); }
+.filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill-filter {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 500;
+}
+.pill-filter.active { background: var(--panel2); border-color: var(--saffron); color: var(--saffron); }
+
+/* Table & Dossier Cards */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 26px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+  padding: 12px 16px;
+  background: var(--panel2);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+td { padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+.host-cell { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 500; }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.b-CRITICAL { background: var(--crit-bg); color: var(--crit); border: 1px solid rgba(255, 68, 88, 0.3); }
+.b-HIGH { background: var(--high-bg); color: var(--high); border: 1px solid rgba(255, 133, 51, 0.3); }
+.b-MEDIUM { background: var(--med-bg); color: var(--med); }
+.b-LOW { background: var(--low-bg); color: var(--low); }
+.b-BRAND-OWNED { background: var(--ok-bg); color: var(--ok); }
+.new-tag {
+  display: inline-block;
+  background: var(--saffron);
+  color: #0c1017;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+/* Detailed Takedown Accordion Cards */
+details.threat-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+details.threat-card[open] { border-color: var(--line-strong); }
+details.threat-card summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+details.threat-card summary::-webkit-details-marker { display: none; }
+.caret { color: var(--dim); font-size: 12px; transition: transform 0.15s; }
+details[open] summary .caret { transform: rotate(90deg); }
+.threat-body {
+  padding: 18px 20px;
+  border-top: 1px solid var(--line);
+  background: #0f1422;
+}
+
+/* Side by side comparison */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.cmp-box {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 14px 16px;
+}
+.cmp-box.fraud { border-color: rgba(255, 68, 88, 0.35); background: rgba(255, 68, 88, 0.03); }
+.cmp-box.legit { border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.03); }
+.cmp-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.cmp-title.fraud { color: var(--crit); }
+.cmp-title.legit { color: var(--ok); }
+.cmp-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.cmp-row:last-child { border-bottom: none; }
+.cmp-lbl { color: var(--dim); font-size: 11.5px; }
+.cmp-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+/* Technical specs grid */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12.5px;
+  margin-bottom: 16px;
+}
+.tech-row { display: flex; gap: 10px; padding: 3px 0; }
+.tech-lbl { color: var(--dim); min-width: 110px; font-size: 11.5px; }
+.tech-val { font-family: 'JetBrains Mono', monospace; color: var(--ink); word-break: break-all; }
+
+/* Reasons list */
+ul.threat-reasons { list-style: none; margin: 12px 0 16px; }
+ul.threat-reasons li {
+  font-size: 12.5px;
+  color: #fed7aa;
+  padding: 3px 0 3px 18px;
+  position: relative;
+}
+ul.threat-reasons li:before { content: "⚠️"; position: absolute; left: 0; font-size: 11px; }
+
+/* Action Buttons */
+.action-cluster { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.action-btn {
+  background: var(--panel2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.action-btn:hover { border-color: var(--saffron); color: var(--saffron); }
+.action-btn.primary { background: var(--saffron); color: #0c1017; border-color: var(--saffron); font-weight: 700; }
+.action-btn.primary:hover { opacity: 0.9; }
+
+/* Modal for Dossier Previews */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: none;
+  place-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: #cbd5e1;
+  background: #090d14;
+}
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #10b981;
+  color: #0c1017;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  display: none;
+  z-index: 10000;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Live Backend Connectivity Bar -->
+  <div class="server-bar">
+    <div class="server-status" id="server-status-pill">
+      <span style="font-size:14px;">📡</span> Connecting to live backend API...
+    </div>
+    <div class="server-actions">
+      <button id="btn-debug-toggle" class="debug-btn" onclick="toggleDebugMode()" title="Toggle Deep Debug Diagnostics">🐞 Debug: <span id="debug-status-text">OFF</span></button>
+      <span style="color:var(--dim)">|</span>
+      <a href="/docs" target="_blank" class="server-link">📘 Swagger Docs</a>
+      <span style="color:var(--dim)">|</span>
+      <a href="/api/export/csv" target="_blank" class="server-link">📥 CSV</a>
+      <span style="color:var(--dim)">|</span>
+      <a href="/api/export/json" target="_blank" class="server-link">📥 JSON</a>
+    </div>
+  </div>
+
+  <!-- Debug Diagnostics Drawer (Collapsible) -->
+  <div id="debug-drawer" class="debug-drawer" style="display: none;">
+    <div class="debug-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:15px;">🐞</span>
+        <span>SYSTEM DIAGNOSTICS & TELEMETRY</span>
+        <span id="debug-badge" style="background:#ef4444; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">ACTIVE</span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="action-btn" style="padding:4px 10px; font-size:11px;" onclick="loadDebugDiagnostics()">🔄 Refresh</button>
+        <button class="action-btn" style="padding:4px 10px; font-size:11px;" onclick="copyDebugJson()">📋 Copy Diagnostic JSON</button>
+      </div>
+    </div>
+    <div class="debug-grid">
+      <div class="debug-card">
+        <h4>🖥️ Server & Engine</h4>
+        <div class="val" id="dbg-server-info">Loading diagnostics…</div>
+      </div>
+      <div class="debug-card">
+        <h4>🧠 Process Memory</h4>
+        <div class="val" id="dbg-memory-info">Loading diagnostics…</div>
+      </div>
+      <div class="debug-card">
+        <h4>☁️ Cloud & Host</h4>
+        <div class="val" id="dbg-cloud-info">Loading diagnostics…</div>
+      </div>
+      <div class="debug-card">
+        <h4>📡 Database & Egress</h4>
+        <div class="val" id="dbg-storage-info">Loading diagnostics…</div>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <div class="brand-box">
+      <div class="shield-icon" style="background:#ffffff; padding:4px; display:flex; align-items:center; justify-content:center;">
+        <img src="/static/favicon.png" alt="YatraDham Logo" style="width:34px; height:34px; object-fit:contain; border-radius:6px;" onerror="this.outerHTML='🛡️'">
+      </div>
+      <div>
+        <h1>YatraDham Brand & Ashram Fraud Monitor <span style="color:var(--saffron)">v2.0</span></h1>
+        <div class="sub">
+          Digital Trust & Safety Initiative
+          <span class="police-tag">🛡️ Initiative from YatraDham.Org</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="stamp" id="header-stamp">Loading live telemetry…</div>
+      <div class="header-btns">
+        <button class="sweep-trigger-btn" id="btn-trigger-sweep" onclick="triggerLiveSweep()">
+          ▶ Trigger Live Sweep (API)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Live Sweep Progress Banner -->
+  <div id="sweep-progress-banner">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <strong id="sweep-banner-title" style="color:var(--saffron);font-size:13.5px;">⚡ Active Sweep Running...</strong>
+      <span id="sweep-banner-percent" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div id="sweep-banner-bar" class="progress-bar-fill"></div>
+    </div>
+    <div id="sweep-banner-step" style="font-size:12px;color:var(--muted);">Initializing sweep worker...</div>
+  </div>
+
+  <!-- Quick Threat Scanner -->
+  <div class="scanner-box">
+    <h3>🔍 Live Threat & Impersonation Inspector (API Powered)</h3>
+    <div class="scanner-row">
+      <input type="text" id="quick-input" class="scanner-input" placeholder="Enter suspicious domain, WhatsApp link (wa.me), phone number, or UPI ID…">
+      <button class="scanner-btn" onclick="runLiveScan()">Analyze Threat Live</button>
+    </div>
+    <div id="quick-output" class="scanner-result"></div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="cards" id="kpi-cards"></div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('alerts')">🚨 Active Threat Alerts (<span id="alert-tab-count">0</span>)</button>
+    <button class="tab-btn" onclick="switchTab('register')">📋 Full Risk Register (<span id="register-tab-count">0</span>)</button>
+    <button class="tab-btn" onclick="switchTab('directory')">🏛 Verified Ashram Directory</button>
+    <button class="tab-btn" onclick="switchTab('owned')">🛡 Cleared Defensive Domains</button>
+  </div>
+
+  <!-- Controls Bar -->
+  <div class="controls-bar" id="controls-bar">
+    <input type="text" id="filter-search" class="search-box" placeholder="Search host, phone, UPI, registrar, ashram…" oninput="filterData()">
+    <div class="filter-group">
+      <button class="pill-filter active" onclick="setBandFilter('ALL', this)">All Risks</button>
+      <button class="pill-filter" onclick="setBandFilter('CRITICAL', this)">Critical (≥75)</button>
+      <button class="pill-filter" onclick="setBandFilter('HIGH', this)">High (55–74)</button>
+      <button class="pill-filter" onclick="setBandFilter('MEDIUM', this)">Medium (35–54)</button>
+      <button class="pill-filter" onclick="setBandFilter('LOW', this)">Low (&lt;35)</button>
+    </div>
+  </div>
+
+  <!-- Tab 1: Threat Alerts -->
+  <div id="view-alerts">
+    <div id="alerts-container"></div>
+  </div>
+
+  <!-- Tab 2: Full Risk Register Table -->
+  <div id="view-register" style="display:none">
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Host / Domain</th>
+            <th>Risk Score</th>
+            <th>Targeted Entity</th>
+            <th>Hosting Provider</th>
+            <th>Location</th>
+            <th>Registrar</th>
+            <th>Detected Via</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="register-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab 3: Verified Directory -->
+  <div id="view-directory" style="display:none">
+    <div class="panel" id="directory-container" style="padding:20px;"></div>
+  </div>
+
+  <!-- Tab 4: Cleared Owned -->
+  <div id="view-owned" style="display:none">
+    <div class="panel" id="owned-container"></div>
+  </div>
+
+</div>
+
+<!-- Modal for Legal & NCRP Dossier -->
+<div class="modal-overlay" id="dossier-modal" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modal-title" style="font-size:15px;font-weight:700;">Legal Takedown Dossier</h3>
+      <button style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="action-btn primary" onclick="copyModalContent()">📋 Copy to Clipboard</button>
+      <button class="action-btn" onclick="closeModalDirect()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">Copied to clipboard!</div>
+
+<script>
+let globalData = { findings: [] };
+let verifiedDirectory = [];
+let currentBand = 'ALL';
+let currentTab = 'alerts';
+let isBackendLive = false;
+let sweepPollInterval = null;
+let isDebugMode = new URLSearchParams(window.location.search).get('debug') === '1';
+let lastDebugData = null;
+
+// Determine API base URL
+const API_BASE = window.location.origin.includes('http') ? window.location.origin : 'http://127.0.0.1:8090';
+
+// Check backend health & load data
+fetchData();
+
+async function fetchData() {
+  const startTime = performance.now();
+  try {
+    const healthRes = await fetch(`${API_BASE}/api/health`, { cache: 'no-store' });
+    if (healthRes.ok) {
+      const healthData = await healthRes.json();
+      isBackendLive = true;
+      if (healthData.debug_mode !== undefined && !new URLSearchParams(window.location.search).has('debug')) {
+        isDebugMode = healthData.debug_mode;
+      }
+      updateDebugUI();
+
+      const latency = Math.round(performance.now() - startTime);
+      const portText = window.location.port ? `:${window.location.port}` : ':8090';
+      document.getElementById('server-status-pill').className = 'server-status live';
+      document.getElementById('server-status-pill').innerHTML =
+        `🟢 LIVE BACKEND API CONNECTED · FastAPI (Uvicorn ${portText}) · ${latency}ms latency`;
+
+      // Load via REST APIs
+      const [statsData, findingsData, instData] = await Promise.all([
+        fetch(`${API_BASE}/api/stats`).then(r => r.json()),
+        fetch(`${API_BASE}/api/findings?limit=500`).then(r => r.json()),
+        fetch(`${API_BASE}/api/institutions`).then(r => r.json())
+      ]);
+
+      globalData = {
+        generated_at: statsData.last_sweep_timestamp,
+        candidates_tested: 250,
+        duration_s: 21.0,
+        hosts_examined: statsData.total_hosts_examined,
+        findings: findingsData.results || []
+      };
+      verifiedDirectory = instData.institutions || [];
+      init();
+      return;
+    }
+  } catch (e) {
+    // Fallback to static files
+  }
+
+  // Offline / Static File fallback
+  document.getElementById('server-status-pill').className = 'server-status offline';
+  document.getElementById('server-status-pill').innerHTML =
+    `🟡 LOCAL FILE MODE · Start live backend with <code style="color:var(--saffron)">python server.py</code>`;
+
+  Promise.all([
+    fetch('findings.json?t=' + Date.now()).then(r => r.json()).catch(() => ({ findings: [] })),
+    fetch('../data/verified_institutions.json?t=' + Date.now()).then(r => r.json()).catch(() => ({}))
+  ]).then(([findingsData, directoryData]) => {
+    globalData = findingsData;
+    verifiedDirectory = directoryData.institutions || [];
+    init();
+  });
+}
+
+function updateDebugUI() {
+  const btn = document.getElementById('btn-debug-toggle');
+  const txt = document.getElementById('debug-status-text');
+  const drawer = document.getElementById('debug-drawer');
+  if (!btn || !txt || !drawer) return;
+  if (isDebugMode) {
+    btn.classList.add('active');
+    txt.textContent = 'ON';
+    drawer.style.display = 'block';
+    loadDebugDiagnostics();
+  } else {
+    btn.classList.remove('active');
+    txt.textContent = 'OFF';
+    drawer.style.display = 'none';
+  }
+}
+
+async function toggleDebugMode() {
+  isDebugMode = !isDebugMode;
+  updateDebugUI();
+  if (isBackendLive) {
+    try {
+      await fetch(`${API_BASE}/api/debug/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: isDebugMode })
+      });
+    } catch (e) {
+      console.warn('Could not sync debug mode to backend:', e);
+    }
+  }
+  showToast(isDebugMode ? '🐞 Debug Mode Enabled' : '🐞 Debug Mode Disabled');
+}
+
+async function loadDebugDiagnostics() {
+  if (!isBackendLive) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/debug/system`);
+    if (!res.ok) return;
+    const d = await res.json();
+    lastDebugData = d;
+
+    // Server card
+    document.getElementById('dbg-server-info').innerHTML = `
+      PID: <strong>${d.system.pid}</strong> · Python: <strong>${d.system.python_version.split(' ')[0]}</strong><br>
+      Platform: <strong>${d.system.platform}</strong><br>
+      Uptime: <strong>${Math.floor(d.server_uptime_seconds)}s</strong> (${(d.server_uptime_seconds / 60).toFixed(1)}m)
+    `;
+
+    // Memory card
+    document.getElementById('dbg-memory-info').innerHTML = `
+      Working Set (RSS): <strong>${d.system.memory.rss_mb} MB</strong><br>
+      Virtual Memory: <strong>${d.system.memory.vms_mb} MB</strong><br>
+      Active Threads: <strong>${d.system.active_threads}</strong>
+    `;
+
+    // Cloud card
+    const isRender = d.environment.is_render;
+    document.getElementById('dbg-cloud-info').innerHTML = `
+      Environment: <strong style="color:${isRender ? '#10b981' : '#38bdf8'}">${isRender ? '🟢 Render Container' : '💻 Local Workstation'}</strong><br>
+      Host Binding: <code>${d.environment.host}:${d.environment.port}</code><br>
+      Debug Env: <code>${d.environment.debug_env}</code>
+    `;
+
+    // Storage card
+    document.getElementById('dbg-storage-info').innerHTML = `
+      Cached Findings: <strong>${d.storage.cached_findings_count}</strong> records<br>
+      Verified Stays: <strong>${d.storage.verified_institutions_count}</strong> records<br>
+      DNS Resolution: <strong>${d.network.dns_resolution ? '✅ OK' : '❌ FAILED'}</strong>
+    `;
+  } catch (e) {
+    console.error('Failed to load debug diagnostics:', e);
+  }
+}
+
+function copyDebugJson() {
+  if (!lastDebugData) {
+    alert('Diagnostics data not loaded yet. Click Refresh.');
+    return;
+  }
+  navigator.clipboard.writeText(JSON.stringify(lastDebugData, null, 2));
+  showToast('📋 Diagnostic JSON copied to clipboard');
+}
+
+function init() {
+  const f = globalData.findings || [];
+  const hi = f.filter(r => r.risk_score >= 55 && r.risk_band !== 'BRAND-OWNED');
+  const owned = f.filter(r => r.risk_band === 'BRAND-OWNED');
+  const active = f.filter(r => r.risk_band !== 'BRAND-OWNED');
+  const ashramAttacks = f.filter(r => r.targeted_institution_name && r.risk_score >= 35);
+  const upiAttacks = f.filter(r => (r.page?.upi_ids || []).length > 0);
+  const phoneAttacks = f.filter(r => (r.page?.copied_phones || []).length > 0);
+
+  // Header Stamp
+  document.getElementById('header-stamp').innerHTML =
+    'Last Sweep: ' + (globalData.generated_at ? new Date(globalData.generated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'Live') + ' IST<br>' +
+    (globalData.candidates_tested || 0) + ' permutations tested · ' + (globalData.duration_s || 0) + 's runtime';
+
+  document.getElementById('alert-tab-count').textContent = hi.length;
+  document.getElementById('register-tab-count').textContent = active.length;
+
+  // KPI Cards
+  const cards = [
+    ['Total Hosts Examined', f.length, '', 'across all 5 channels'],
+    ['High/Critical Alerts', hi.length, hi.length ? 'crit' : 'ok', 'score ≥ 55 — action required'],
+    ['Ashram Impersonations', ashramAttacks.length, 'saffron', 'fake stay & trust portals'],
+    ['Fraudulent Helplines', phoneAttacks.length, 'high', 'unauthorized mobile numbers'],
+    ['Scammer UPI Handles', upiAttacks.length, 'crit', 'personal money collection VPAs'],
+    ['Cleared Brand Owned', owned.length, 'ok', 'defensive 301 registrations']
+  ];
+  document.getElementById('kpi-cards').innerHTML = cards.map(([k, v, c, n]) => `
+    <div class="card">
+      <div class="k">${k}</div>
+      <div class="v ${c}">${v}</div>
+      <div class="n">${n}</div>
+    </div>
+  `).join('');
+
+  renderAlerts();
+  renderRegister();
+  renderDirectory();
+  renderOwned();
+}
+
+function renderAlerts() {
+  const hi = (globalData.findings || []).filter(r => r.risk_score >= 55 && r.risk_band !== 'BRAND-OWNED');
+  const container = document.getElementById('alerts-container');
+  if (!hi.length) {
+    container.innerHTML = '<div class="panel" style="padding:32px;text-align:center;color:var(--dim);">No active host crossed the high-risk threshold in this sweep. System is all clear.</div>';
+    return;
+  }
+  container.innerHTML = hi.map(renderThreatCard).join('');
+}
+
+function renderThreatCard(r) {
+  const w = r.whois || {};
+  const h = r.host_info || {};
+  const p = r.page || {};
+  const t = r.takedown || {};
+  const instName = r.targeted_institution_name || 'YatraDham Brand';
+
+  return `
+    <details class="threat-card" ${r.risk_score >= 70 ? 'open' : ''}>
+      <summary>
+        <span class="caret">▶</span>
+        <span class="badge b-${r.risk_band}">${r.risk_score} · ${r.risk_band}</span>
+        <span class="host-cell">${r.host}</span>
+        ${r.is_new ? '<span class="new-tag">NEW</span>' : ''}
+        <span style="font-size:12px;color:var(--saffron);margin-left:8px;">🎯 Target: ${instName}</span>
+        <span style="font-size:12px;color:var(--dim);margin-left:auto;">${h.hosting_provider || ''} (${h.host_country || '—'})</span>
+      </summary>
+      <div class="threat-body">
+        
+        <!-- Discrepancy comparison -->
+        <div class="comparison-grid">
+          <div class="cmp-box fraud">
+            <div class="cmp-title fraud">🚨 Fraudulent Impersonator Evidence</div>
+            <div class="cmp-row"><span class="cmp-lbl">Impersonating URL:</span><span class="cmp-val">https://${r.host}/</span></div>
+            <div class="cmp-row"><span class="cmp-lbl">Unauthorized Helplines:</span><span class="cmp-val" style="color:var(--crit);">${(p.copied_phones || []).join(', ') || 'Listed on landing page'}</span></div>
+            <div class="cmp-row"><span class="cmp-lbl">Scammer UPI VPAs:</span><span class="cmp-val" style="color:var(--crit);">${(p.upi_ids || []).join(', ') || 'Direct QR / Transfer'}</span></div>
+            <div class="cmp-row"><span class="cmp-lbl">Payment Gateways:</span><span class="cmp-val">${(p.gateways || []).join(', ') || 'Direct Transfer'}</span></div>
+            <div class="cmp-row"><span class="cmp-lbl">Advance Demands:</span><span class="cmp-val">${(p.advance_payment_signals || []).join(', ') || 'Token required'}</span></div>
+          </div>
+          <div class="cmp-box legit">
+            <div class="cmp-title legit">🛡 Genuine Institution Ground Truth</div>
+            <div class="cmp-row"><span class="cmp-lbl">Institution:</span><span class="cmp-val">${instName}</span></div>
+            <div class="cmp-row"><span class="cmp-lbl">Official Desk:</span><span class="cmp-val">Counter or Verified YatraDham Portal</span></div>
+            <div class="cmp-row"><span class="cmp-lbl">Advance Policy:</span><span class="cmp-val">Official Gateways Only. Never UPI on WhatsApp.</span></div>
+            <div class="cmp-row"><span class="cmp-lbl">Verification:</span><span class="cmp-val" style="color:var(--ok);">Verified Trust Record in YatraDham Registry</span></div>
+          </div>
+        </div>
+
+        <!-- Technical Attribution -->
+        <div class="tech-grid">
+          <div class="tech-row"><span class="tech-lbl">Host IP:</span><span class="tech-val">${r.ip || '—'}</span></div>
+          <div class="tech-row"><span class="tech-lbl">Hosting / ISP:</span><span class="tech-val">${h.hosting_provider || '—'}</span></div>
+          <div class="tech-row"><span class="tech-lbl">ASN:</span><span class="tech-val">${h.asn || '—'}</span></div>
+          <div class="tech-row"><span class="tech-lbl">Location:</span><span class="tech-val">${[h.host_city, h.host_country].filter(Boolean).join(', ') || '—'}</span></div>
+          <div class="tech-row"><span class="tech-lbl">Registrar:</span><span class="tech-val">${w.registrar || '—'}</span></div>
+          <div class="tech-row"><span class="tech-lbl">Registered On:</span><span class="tech-val">${(w.created || '—').slice(0, 10)}</span></div>
+          <div class="tech-row"><span class="tech-lbl">Abuse Email:</span><span class="tech-val">${w.abuse_email || '—'}</span></div>
+          <div class="tech-row"><span class="tech-lbl">Privacy Proxy:</span><span class="tech-val">${w.privacy_protected ? 'Yes (Concealed)' : 'No'}</span></div>
+        </div>
+
+        <!-- Risk reasons -->
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Forensic Risk Breakdown:</div>
+        <ul class="threat-reasons">
+          ${(r.risk_reasons || []).map(x => `<li>${x}</li>`).join('')}
+        </ul>
+
+        <!-- One Click Action Buttons -->
+        <div class="action-cluster">
+          <button class="action-btn primary" onclick="showNcrpModal('${r.host}')">📋 Copy NCRP Cybercrime Complaint</button>
+          <button class="action-btn" onclick="showPoliceMemo('${r.host}')">🏛 Incident Escalation Memo</button>
+          ${w.abuse_email ? `<button class="action-btn" onclick="openRegistrarMail('${r.host}', '${w.abuse_email}')">📧 Email Registrar Abuse Desk</button>` : ''}
+          ${(p.upi_ids || []).length ? `<button class="action-btn" onclick="showNpciFreeze('${r.host}')">🛑 Copy NPCI UPI Freeze Notice</button>` : ''}
+          <button class="action-btn" onclick="window.open('${t.google_safebrowsing_url || 'https://safebrowsing.google.com/safebrowsing/report_phish/'}', '_blank')">🌐 Google Safe Browsing Report</button>
+        </div>
+
+      </div>
+    </details>
+  `;
+}
+
+function renderRegister() {
+  const active = (globalData.findings || []).filter(r => r.risk_band !== 'BRAND-OWNED');
+  const tbody = document.getElementById('register-tbody');
+  tbody.innerHTML = active.map(r => {
+    const w = r.whois || {};
+    const h = r.host_info || {};
+    return `
+      <tr data-host="${r.host}" data-band="${r.risk_band}" data-score="${r.risk_score}">
+        <td class="host-cell">${r.host} ${r.is_new && r.risk_score >= 55 ? '<span class="new-tag">NEW</span>' : ''}</td>
+        <td><span class="badge b-${r.risk_band}">${r.risk_score} · ${r.risk_band}</span></td>
+        <td style="color:var(--saffron);font-weight:600;">${r.targeted_institution_name || '—'}</td>
+        <td class="mono">${(h.hosting_provider || '—').slice(0, 24)}</td>
+        <td class="mono">${h.host_country || '—'}</td>
+        <td class="mono">${(w.registrar || '—').slice(0, 24)}</td>
+        <td class="mono">${(r.sources || []).join(', ')}</td>
+        <td>
+          <button class="action-btn" style="padding:4px 8px;font-size:11px;" onclick="showNcrpModal('${r.host}')">Dossier</button>
+        </td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--dim);">No records found.</td></tr>';
+}
+
+function renderDirectory() {
+  const container = document.getElementById('directory-container');
+  if (!verifiedDirectory.length) {
+    container.innerHTML = '<div style="color:var(--dim);">No verified institutions loaded.</div>';
+    return;
+  }
+  container.innerHTML = `
+    <h3 style="font-size:16px;font-weight:700;margin-bottom:14px;color:var(--saffron);">
+      🏛 Verified Religious Institutions & Ashrams Directory (Ground Truth Registry)
+    </h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;">
+      ${verifiedDirectory.map(inst => `
+        <div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;">
+          <div style="font-weight:700;font-size:14px;color:var(--ink);">${inst.name}</div>
+          <div style="font-size:12px;color:var(--dim);margin-bottom:8px;">${inst.city}, ${inst.state} · <span style="color:var(--ok);">Verified Trust</span></div>
+          <div style="font-size:12px;margin-bottom:4px;"><strong style="color:var(--muted);">Official Site:</strong> <a href="${inst.official_website}" target="_blank">${inst.official_website}</a></div>
+          <div style="font-size:12px;margin-bottom:4px;"><strong style="color:var(--muted);">Verified Phones:</strong> <span style="font-family:'JetBrains Mono',monospace;">${(inst.verified_phones || []).join(', ')}</span></div>
+          <div style="font-size:12px;color:#cbd5e1;margin-top:6px;background:rgba(255,156,51,0.06);padding:6px 8px;border-radius:6px;">
+            ⚠️ <strong>Payment Policy:</strong> ${inst.payment_policy}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderOwned() {
+  const owned = (globalData.findings || []).filter(r => r.risk_band === 'BRAND-OWNED');
+  const container = document.getElementById('owned-container');
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr><th>Defensive Domain</th><th>Registered</th><th>Registrar</th><th>Destination URL</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        ${owned.map(r => `
+          <tr>
+            <td class="host-cell">${r.host}</td>
+            <td class="mono">${(r.whois?.created || '—').slice(0, 10)}</td>
+            <td class="mono">${r.whois?.registrar || '—'}</td>
+            <td class="mono"><a href="${r.page?.final_url || 'https://yatradham.org/'}" target="_blank">${r.page?.final_url || 'https://yatradham.org/'}</a></td>
+            <td><span class="badge b-BRAND-OWNED">CLEARED (301)</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('view-alerts').style.display = tab === 'alerts' ? 'block' : 'none';
+  document.getElementById('view-register').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('view-directory').style.display = tab === 'directory' ? 'block' : 'none';
+  document.getElementById('view-owned').style.display = tab === 'owned' ? 'block' : 'none';
+  document.getElementById('controls-bar').style.display = (tab === 'alerts' || tab === 'register') ? 'flex' : 'none';
+}
+
+function setBandFilter(band, el) {
+  currentBand = band;
+  document.querySelectorAll('.pill-filter').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  filterData();
+}
+
+function filterData() {
+  const query = document.getElementById('filter-search').value.toLowerCase();
+  const rows = document.querySelectorAll('#register-tbody tr');
+  rows.forEach(r => {
+    const host = r.getAttribute('data-host') || '';
+    const band = r.getAttribute('data-band') || '';
+    const text = r.textContent.toLowerCase();
+    const matchBand = (currentBand === 'ALL' || band === currentBand);
+    const matchQuery = (!query || text.includes(query));
+    r.style.display = (matchBand && matchQuery) ? '' : 'none';
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Live Backend Operations: Real-time Scan & Sweep
+// ---------------------------------------------------------------------------
+
+async function runLiveScan() {
+  const val = document.getElementById('quick-input').value.trim();
+  const out = document.getElementById('quick-output');
+  if (!val) return;
+
+  out.style.display = 'block';
+  out.style.background = 'var(--panel2)';
+  out.innerHTML = '⚡ Querying live backend API for deep forensic inspection & RDAP resolution…';
+
+  if (isBackendLive) {
+    try {
+      const res = await fetch(`${API_BASE}/api/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: val, debug: isDebugMode })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const f = data.finding;
+        const color = f.risk_score >= 75 ? 'var(--crit)' : f.risk_score >= 55 ? 'var(--high)' : f.risk_score >= 35 ? 'var(--med)' : 'var(--low)';
+        const trace = data.debug_trace;
+        out.innerHTML = `
+          <div style="font-weight:700;font-size:14px;color:${color};margin-bottom:6px;">
+            Live API Risk Score: ${f.risk_score}/100 · ${f.risk_band} (${f.threat_category})
+          </div>
+          <div style="font-size:12.5px;color:var(--ink);margin-bottom:6px;">
+            Targeted Entity: <strong>${f.targeted_institution_name || 'General / YatraDham'}</strong> | Host: <code>${f.host}</code> (IP: ${f.ip})
+          </div>
+          <div style="font-size:12px;color:var(--muted);">${(f.risk_reasons || []).map(r => '• ' + r).join('<br>')}</div>
+          ${trace ? `
+            <div class="debug-trace-box">
+              <strong style="color:#f87171;">🐞 Deep Diagnostic Trace (${trace.inspection_time_ms}ms):</strong><br>
+              • Resolved IP: <code>${trace.resolved_ip}</code> (${trace.dns_host_info?.hosting_provider || 'ASN Lookup Pending'})<br>
+              • RDAP Registrar: <code>${trace.rdap_registrar || 'Privacy Protected / Pending'}</code><br>
+              • Crawler Reachable: <code>${trace.crawler_reachable}</code> (HTTP ${trace.crawler_status_code || '—'})<br>
+              • Active Penalties (${trace.risk_reasons_count}): <code>${trace.risk_reasons?.join('; ') || 'None'}</code>
+            </div>
+          ` : ''}
+          ${f.risk_score >= 55 ? `
+            <div style="margin-top:10px;">
+              <button class="action-btn primary" onclick="showNcrpModal('${f.host}')">📋 Open Generated NCRP Complaint</button>
+            </div>
+          ` : ''}
+        `;
+        return;
+      }
+    } catch (e) {
+      console.warn('Live scan API failed, falling back to local heuristic:', e);
+    }
+  }
+
+  // Fallback client-side heuristic
+  runLocalScanHeuristic(val, out);
+}
+
+function runLocalScanHeuristic(val, out) {
+  let matchInst = null;
+  const valLower = val.toLowerCase();
+  for (const inst of verifiedDirectory) {
+    if (valLower.includes(inst.id) || valLower.includes(inst.name.toLowerCase())) {
+      matchInst = inst;
+      break;
+    }
+  }
+
+  let risk = 20;
+  let band = 'LOW';
+  let color = 'var(--low)';
+  let reasons = [];
+
+  if (matchInst) {
+    risk += 35;
+    reasons.push('Directly impersonates verified stay: ' + matchInst.name);
+  }
+  if (valLower.includes('wa.me') || valLower.includes('whatsapp')) {
+    risk += 25;
+    reasons.push('WhatsApp direct money transfer vector');
+  }
+  if (valLower.includes('@paytm') || valLower.includes('@ybl') || valLower.includes('@upi')) {
+    risk += 30;
+    reasons.push('Personal UPI VPA collection handle detected');
+  }
+  if (valLower.includes('advance') || valLower.includes('token')) {
+    risk += 15;
+    reasons.push('High-pressure advance token payment demand');
+  }
+
+  risk = Math.min(100, risk);
+  if (risk >= 75) { band = 'CRITICAL'; color = 'var(--crit)'; }
+  else if (risk >= 55) { band = 'HIGH'; color = 'var(--high)'; }
+  else if (risk >= 35) { band = 'MEDIUM'; color = 'var(--med)'; }
+
+  out.innerHTML = `
+    <div style="font-weight:700;font-size:14px;color:${color};margin-bottom:6px;">
+      Heuristic Threat Score: ${risk}/100 · ${band}
+    </div>
+    <div>${reasons.length ? reasons.map(r => '• ' + r).join('<br>') : '• General observation'}</div>
+  `;
+}
+
+async function triggerLiveSweep() {
+  const btn = document.getElementById('btn-trigger-sweep');
+  const banner = document.getElementById('sweep-progress-banner');
+  if (!isBackendLive) {
+    alert('Live backend server is not running!\n\nTo run live sweeps and real-time scanning, start the backend with:\n  python server.py\nor double click start_app.bat');
+    return;
+  }
+
+  btn.disabled = true;
+  banner.style.display = 'block';
+  document.getElementById('sweep-banner-title').textContent = '⚡ Multi-Channel Sweep in Progress...';
+  document.getElementById('sweep-banner-bar').style.width = '15%';
+  document.getElementById('sweep-banner-percent').textContent = '15%';
+  document.getElementById('sweep-banner-step').textContent = 'Kicking off background worker...';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/sweep/trigger?quick=true`, { method: 'POST' });
+    const data = await res.json();
+    
+    // Start polling status
+    if (sweepPollInterval) clearInterval(sweepPollInterval);
+    sweepPollInterval = setInterval(pollSweepStatus, 1500);
+
+  } catch (e) {
+    btn.disabled = false;
+    alert('Could not trigger sweep: ' + e);
+    banner.style.display = 'none';
+  }
+}
+
+async function pollSweepStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/api/sweep/status`);
+    if (!res.ok) return;
+    const st = await res.json();
+    
+    document.getElementById('sweep-banner-bar').style.width = `${st.progress_percent}%`;
+    document.getElementById('sweep-banner-percent').textContent = `${st.progress_percent}%`;
+    document.getElementById('sweep-banner-step').textContent = st.current_step || 'Processing...';
+
+    if (st.status === 'completed') {
+      clearInterval(sweepPollInterval);
+      document.getElementById('sweep-banner-title').textContent = '✓ Sweep Completed Successfully!';
+      document.getElementById('sweep-banner-bar').style.width = '100%';
+      document.getElementById('btn-trigger-sweep').disabled = false;
+      setTimeout(() => {
+        document.getElementById('sweep-progress-banner').style.display = 'none';
+      }, 3500);
+      fetchData(); // Reload live findings
+    } else if (st.status === 'error') {
+      clearInterval(sweepPollInterval);
+      document.getElementById('sweep-banner-title').textContent = '❌ Sweep Error: ' + st.last_error;
+      document.getElementById('btn-trigger-sweep').disabled = false;
+    }
+  } catch (e) {
+    console.warn('Error polling sweep status:', e);
+  }
+}
+
+// Modal Handlers
+function getFinding(host) {
+  return (globalData.findings || []).find(f => f.host === host);
+}
+
+function showNcrpModal(host) {
+  const f = getFinding(host);
+  if (!f) return;
+  const t = f.takedown || {};
+  document.getElementById('modal-title').textContent = 'NCRP CyberCrime Filing Dossier: ' + host;
+  document.getElementById('modal-body').textContent = t.police_memo ? t.police_memo + '\n\n' + t.registrar_abuse_notice : JSON.stringify(f, null, 2);
+  document.getElementById('dossier-modal').style.display = 'grid';
+}
+
+function showPoliceMemo(host) {
+  const f = getFinding(host);
+  if (!f) return;
+  const t = f.takedown || {};
+  document.getElementById('modal-title').textContent = 'Incident Escalation Memorandum: ' + host;
+  document.getElementById('modal-body').textContent = t.police_memo || 'Memo pending generation';
+  document.getElementById('dossier-modal').style.display = 'grid';
+}
+
+function showNpciFreeze(host) {
+  const f = getFinding(host);
+  if (!f) return;
+  const t = f.takedown || {};
+  document.getElementById('modal-title').textContent = 'NPCI / Bank Account Freeze Request: ' + host;
+  document.getElementById('modal-body').textContent = t.npci_bank_freeze_request || 'No UPI handles logged';
+  document.getElementById('dossier-modal').style.display = 'grid';
+}
+
+function openRegistrarMail(host, email) {
+  const f = getFinding(host);
+  const t = f?.takedown || {};
+  const subject = encodeURIComponent('URGENT: Trademark Infringement & Active Phishing Fraud Takedown - ' + host);
+  const body = encodeURIComponent(t.registrar_abuse_notice || 'Please suspend this domain for financial fraud.');
+  window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+}
+
+function closeModal(e) {
+  if (e.target.id === 'dossier-modal') closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('dossier-modal').style.display = 'none';
+}
+function copyModalContent() {
+  const text = document.getElementById('modal-body').textContent;
+  navigator.clipboard.writeText(text);
+  const toast = document.getElementById('toast');
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 2000);
+}
+</script>
+</body>
+</html>

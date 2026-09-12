@@ -1,0 +1,437 @@
+{
+  "brand": {
+    "name": "YatraDham.org",
+    "organization": "YatraDham E-Services Private Limited",
+    "headquarters": "Bhavnagar, Gujarat, India",
+    "primary_domain": "yatradham.org",
+    "defensive_domains": [
+      "yatradham.in",
+      "yatradham.com",
+      "yatradham.net",
+      "yatradham.co.in",
+      "yatra-dham.com"
+    ],
+    "official_phones": [
+      "+918469999945",
+      "+912782511111",
+      "0278-2511111",
+      "8469999945"
+    ],
+    "official_emails": [
+      "info@yatradham.org",
+      "support@yatradham.org",
+      "booking@yatradham.org"
+    ],
+    "official_social": {
+      "facebook": "https://www.facebook.com/yatradham.org",
+      "instagram": "https://www.instagram.com/yatradham_org",
+      "youtube": "https://www.youtube.com/@YatraDhamOrg",
+      "twitter": "https://twitter.com/yatradhamorg",
+      "linkedin": "https://www.linkedin.com/company/yatradham"
+    },
+    "verified_gateways": [
+      "Razorpay",
+      "Cashfree",
+      "PayU"
+    ]
+  },
+  "institutions": [
+    {
+      "id": "bhuj-vishranti-bhavan",
+      "name": "Bhuj Vishranti Bhavan",
+      "aliases": [
+        "Bhuj Vishranti Griha",
+        "Vishranti Bhavan Bhuj",
+        "Bhuj Jain Vishranti"
+      ],
+      "city": "Bhuj",
+      "state": "Gujarat",
+      "category": "Dharamshala",
+      "official_website": "https://bhujvishrantibhavan.org",
+      "yatradham_verified_url": "https://yatradham.org/bhuj/vishranti-bhavan.html",
+      "verified_phones": [
+        "+912832250100",
+        "+919426212345",
+        "02832-250100"
+      ],
+      "verified_emails": [
+        "trust@bhujvishrantibhavan.org"
+      ],
+      "payment_policy": "Direct counter or verified YatraDham booking only. Never ask advance UPI on WhatsApp.",
+      "vulnerability_level": "HIGH",
+      "known_scam_domains": [
+        "bhujvishrantibhavan.online",
+        "bhujvishrantibhavanbooking.com"
+      ],
+      "keywords": [
+        "bhujvishranti",
+        "bhuj vishranti",
+        "vishranti bhavan",
+        "vishrantibhavan"
+      ]
+    },
+    {
+      "id": "khatu-shyam-trust",
+      "name": "Shree Khatu Shyam Ji Mandir Dharamshala",
+      "aliases": [
+        "Khatu Shyam Dharamshala",
+        "Khatu Shyam Ji Trust Guest House",
+        "Khatu Mandir Bhawan"
+      ],
+      "city": "Khatu (Sikar)",
+      "state": "Rajasthan",
+      "category": "Trust Dharamshala",
+      "official_website": "https://khatushyam.in",
+      "yatradham_verified_url": "https://yatradham.org/khatu-shyamji-dharamshala.html",
+      "verified_phones": [
+        "+911576230182",
+        "+911576230482",
+        "01576-230182"
+      ],
+      "verified_emails": [
+        "info@khatushyam.in"
+      ],
+      "payment_policy": "Official portal or YatraDham verified gateway only. Fraudsters actively create fake booking mobile helplines.",
+      "vulnerability_level": "CRITICAL",
+      "known_scam_domains": [
+        "khatushyamdharamshala.org",
+        "khatushyambooking.in",
+        "khatushyamroombooking.com"
+      ],
+      "keywords": [
+        "khatushyam",
+        "khatu shyam",
+        "khatushyambooking",
+        "khatushyamdharamshala"
+      ]
+    },
+    {
+      "id": "salasar-balaji-trust",
+      "name": "Shree Salasar Balaji Mandir Dharamshala",
+      "aliases": [
+        "Salasar Balaji Dharamshala",
+        "Hanuman Seva Samiti Salasar",
+        "Salasar Balaji Bhawan"
+      ],
+      "city": "Salasar (Churu)",
+      "state": "Rajasthan",
+      "category": "Trust Dharamshala",
+      "official_website": "https://shreesalasarbalaji.com",
+      "yatradham_verified_url": "https://yatradham.org/salasar-dharamshala.html",
+      "verified_phones": [
+        "+911567238128",
+        "+911567238129",
+        "01567-238128"
+      ],
+      "verified_emails": [
+        "contact@shreesalasarbalaji.com"
+      ],
+      "payment_policy": "No booking taken on personal mobile UPI. Rooms allocated via official counters & YatraDham.",
+      "vulnerability_level": "CRITICAL",
+      "known_scam_domains": [
+        "salasarbalajibooking.com",
+        "salasarbalajidharamshala.in"
+      ],
+      "keywords": [
+        "salasarbalaji",
+        "salasar balaji",
+        "salasarbooking",
+        "salasarbalajibooking"
+      ]
+    },
+    {
+      "id": "kedarnath-gmvn",
+      "name": "Kedarnath GMVN Cottages & Ashrams",
+      "aliases": [
+        "Kedarnath GMVN Online Booking",
+        "GMVN Kedarnath Guesthouse",
+        "Kedarnath Tent & Cottage Booking"
+      ],
+      "city": "Kedarnath",
+      "state": "Uttarakhand",
+      "category": "Govt / Trust Guesthouse",
+      "official_website": "https://gmvnonline.com",
+      "yatradham_verified_url": "https://yatradham.org/kedarnath-dharamshala.html",
+      "verified_phones": [
+        "+911352746817",
+        "+911352749308",
+        "0135-2746817"
+      ],
+      "verified_emails": [
+        "yatra@gmvnonline.com"
+      ],
+      "payment_policy": "High risk of fake helicopter + cottage advance scam. Payments strictly via GMVN/YatraDham gateways.",
+      "vulnerability_level": "CRITICAL",
+      "known_scam_domains": [
+        "kedarnathdharamshala.in",
+        "kedarnathcottagebooking.com",
+        "char-dham-yatra.in"
+      ],
+      "keywords": [
+        "kedarnath",
+        "gmvn kedarnath",
+        "kedarnathcottage",
+        "kedarnathdharamshala"
+      ]
+    },
+    {
+      "id": "badrinath-gujarati-dharamshala",
+      "name": "Badrinath Gujarati Dharamshala & Kali Kamli",
+      "aliases": [
+        "Shree Gujarati Samaj Badrinath",
+        "Badrinath Kali Kamli Dharamshala",
+        "Badrinath Dharamshala"
+      ],
+      "city": "Badrinath",
+      "state": "Uttarakhand",
+      "category": "Dharamshala",
+      "official_website": "https://badarikedar.org",
+      "yatradham_verified_url": "https://yatradham.org/badrinath-dharamshala.html",
+      "verified_phones": [
+        "+911389222123",
+        "01389-222123"
+      ],
+      "verified_emails": [
+        "info@badarikedar.org"
+      ],
+      "payment_policy": "Counter or verified booking platform.",
+      "vulnerability_level": "HIGH",
+      "known_scam_domains": [
+        "badrinathbooking.com"
+      ],
+      "keywords": [
+        "badrinath",
+        "badrinathdharamshala",
+        "badrinathgujarati"
+      ]
+    },
+    {
+      "id": "ujjain-mahakal-bhakta-niwas",
+      "name": "Ujjain Mahakaleshwar Bhakta Niwas",
+      "aliases": [
+        "Mahakal Dharamshala Ujjain",
+        "Shree Mahakaleshwar Mandir Dharamshala",
+        "Ujjain Dharamshala"
+      ],
+      "city": "Ujjain",
+      "state": "Madhya Pradesh",
+      "category": "Temple Trust Stays",
+      "official_website": "https://shrimahakaleshwar.com",
+      "yatradham_verified_url": "https://yatradham.org/ujjain-dharamshala.html",
+      "verified_phones": [
+        "+917342550563",
+        "+917342551714",
+        "0734-2550563"
+      ],
+      "verified_emails": [
+        "itcell@shrimahakaleshwar.com"
+      ],
+      "payment_policy": "Temple Trust official gateway or YatraDham. Scammers post fake mobile numbers on Google Maps.",
+      "vulnerability_level": "CRITICAL",
+      "known_scam_domains": [
+        "mahakaldharmshalaujjain.org",
+        "ujjainmahakalbooking.com"
+      ],
+      "keywords": [
+        "ujjainmahakal",
+        "mahakal dharamshala",
+        "mahakaldharmshala",
+        "mahakaleshwar"
+      ]
+    },
+    {
+      "id": "shirdi-sai-sansthan",
+      "name": "Shirdi Sai Baba Sansthan Bhakta Niwas",
+      "aliases": [
+        "Shirdi Dwarawati Bhakti Niwas",
+        "Shirdi New Bhakta Niwas",
+        "Sai Sansthan Shirdi Accommodations"
+      ],
+      "city": "Shirdi",
+      "state": "Maharashtra",
+      "category": "Trust Accommodations",
+      "official_website": "https://sai.org.in",
+      "yatradham_verified_url": "https://yatradham.org/shirdi-dharamshala.html",
+      "verified_phones": [
+        "+912423258500",
+        "+912423258770",
+        "02423-258500"
+      ],
+      "verified_emails": [
+        "support@sai.org.in"
+      ],
+      "payment_policy": "Strictly through official trust site or YatraDham. Advance payment via WhatsApp QR is 100% fraud.",
+      "vulnerability_level": "CRITICAL",
+      "known_scam_domains": [
+        "shirdisaibooking.com",
+        "saibhaktnivas.in"
+      ],
+      "keywords": [
+        "shirdisai",
+        "sai sansthan",
+        "dwarawati",
+        "saibhaktnivas"
+      ]
+    },
+    {
+      "id": "tirupati-srinivasam-complex",
+      "name": "Tirupati TTD Srinivasam & Madhavan Guest House",
+      "aliases": [
+        "TTD Srinivasam Complex",
+        "Tirupati Balaji Dharamshala",
+        "TTD Madhavan Rest House"
+      ],
+      "city": "Tirupati",
+      "state": "Andhra Pradesh",
+      "category": "TTD Temple Accommodations",
+      "official_website": "https://tirupatibalaji.ap.gov.in",
+      "yatradham_verified_url": "https://yatradham.org/tirupati-dharamshala.html",
+      "verified_phones": [
+        "+918772277777",
+        "+918772263704",
+        "0877-2277777"
+      ],
+      "verified_emails": [
+        "helpdesk@tirumala.org"
+      ],
+      "payment_policy": "Official TTD Gov portal or YatraDham. High frequency of fake VIP Darshan + Accommodation scams.",
+      "vulnerability_level": "CRITICAL",
+      "known_scam_domains": [
+        "gotirupati.com",
+        "tirupatidarshanbooking.org"
+      ],
+      "keywords": [
+        "tirupati",
+        "srinivasam",
+        "ttd srinivasam",
+        "tirupatibalaji"
+      ]
+    },
+    {
+      "id": "ayodhya-birla-dharamshala",
+      "name": "Ayodhya Birla & Ram Dham Dharamshala",
+      "aliases": [
+        "Ayodhya Ram Mandir Dharamshala",
+        "Birla Dharamshala Ayodhya",
+        "Ayodhya Gujarati Dharamshala"
+      ],
+      "city": "Ayodhya",
+      "state": "Uttar Pradesh",
+      "category": "Dharamshala",
+      "official_website": "https://srjbtkshetra.org",
+      "yatradham_verified_url": "https://yatradham.org/ayodhya-dharamshala.html",
+      "verified_phones": [
+        "+915278292000",
+        "05278-292000"
+      ],
+      "verified_emails": [
+        "contact@srjbtkshetra.org"
+      ],
+      "payment_policy": "High risk of Ram Mandir opening fake booking portals. Verify trust credentials.",
+      "vulnerability_level": "CRITICAL",
+      "known_scam_domains": [
+        "ayodhyaregistration.com",
+        "ayodhyaramdham.org"
+      ],
+      "keywords": [
+        "ayodhya",
+        "ayodhyabirla",
+        "ayodhyaramdham",
+        "ayodhyaregistration"
+      ]
+    },
+    {
+      "id": "somnath-sagar-darshan",
+      "name": "Somnath Sagar Darshan & Shree Somnath Trust Stays",
+      "aliases": [
+        "Somnath Trust Dharamshala",
+        "Sagar Darshan Guest House Somnath",
+        "Somnath VIP Guest House"
+      ],
+      "city": "Prabhas Patan (Somnath)",
+      "state": "Gujarat",
+      "category": "Trust Accommodations",
+      "official_website": "https://somnath.org",
+      "yatradham_verified_url": "https://yatradham.org/somnath-dharamshala.html",
+      "verified_phones": [
+        "+912876231200",
+        "+912876231212",
+        "02876-231200"
+      ],
+      "verified_emails": [
+        "somnath@somnath.org"
+      ],
+      "payment_policy": "Official Trust website or YatraDham verified channel only.",
+      "vulnerability_level": "HIGH",
+      "known_scam_domains": [
+        "somnathbooking.org"
+      ],
+      "keywords": [
+        "somnath",
+        "sagardarshan",
+        "somnath trust",
+        "somnathbooking"
+      ]
+    },
+    {
+      "id": "ambaji-panchal-dharamshala",
+      "name": "Panchal Dharamshala Ambaji",
+      "aliases": [
+        "Ambaji Panchal Bhavan",
+        "Shree Ambaji Dharamshala"
+      ],
+      "city": "Ambaji",
+      "state": "Gujarat",
+      "category": "Dharamshala",
+      "official_website": "https://ambajitemple.in",
+      "yatradham_verified_url": "https://yatradham.org/ambaji-dharamshala.html",
+      "verified_phones": [
+        "+912749262136",
+        "02749-262136"
+      ],
+      "verified_emails": [
+        "info@ambajitemple.in"
+      ],
+      "payment_policy": "Counter or verified YatraDham booking.",
+      "vulnerability_level": "MEDIUM",
+      "known_scam_domains": [
+        "panchaldharamshalaambaji.com"
+      ],
+      "keywords": [
+        "panchaldharamshala",
+        "panchal ambaji",
+        "ambajidharamshala"
+      ]
+    },
+    {
+      "id": "haridwar-gujarati-dharamshala",
+      "name": "Haridwar Gujarati Dharamshala",
+      "aliases": [
+        "Gujarati Samaj Haridwar",
+        "Haridwar Dharamshala"
+      ],
+      "city": "Haridwar",
+      "state": "Uttarakhand",
+      "category": "Dharamshala",
+      "official_website": "https://gujaratidharamshalaharidwar.org",
+      "yatradham_verified_url": "https://yatradham.org/haridwar-dharamshala.html",
+      "verified_phones": [
+        "+911334226100",
+        "01334-226100"
+      ],
+      "verified_emails": [
+        "trust@gujaratidharamshalaharidwar.org"
+      ],
+      "payment_policy": "Official trust desk or YatraDham.",
+      "vulnerability_level": "HIGH",
+      "known_scam_domains": [
+        "gujaratidharamshalaharidwar.com"
+      ],
+      "keywords": [
+        "gujaratidharamshalaharidwar",
+        "haridwardharamshala",
+        "haridwar gujarati"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "host": "bhujvishrantibhavan.online",
+  "registrable_domain": "bhujvishrantibhavan.online",
+  "threat_category": "ASHRAM_IMPERSONATION",
+  "risk_score": 55,
+  "risk_band": "HIGH",
+  "risk_reasons": [
+    "Impersonating top-rated religious stay: Bhuj Vishranti Bhavan (Bhuj) (+30)",
+    "Publishing unauthorized booking helpline / mobile number: +919825098765 (+25)"
+  ],
+  "sources": [
+    "ashram_lookalike"
+  ],
+  "evidence": [
+    {
+      "url": "https://bhujvishrantibhavan.online/",
+      "title": "bhujvishrantibhavan.online - Booking & Support",
+      "query": "dharamshala advance booking helpline",
+      "snippet": "Bhuj Vishranti Bhavan Room Booking - Direct Call +91-9825098765. Token advance \u20b91000 required.",
+      "timestamp": "2026-09-10T09:56:57.080945+00:00"
+    }
+  ],
+  "ip": "\u2014",
+  "host_info": {
+    "ip": "",
+    "hosting_provider": "",
+    "asn": "",
+    "host_country": "",
+    "host_city": "",
+    "reverse_dns": ""
+  },
+  "whois": {
+    "registrar": "",
+    "created": "",
+    "updated": "",
+    "expires": "",
+    "nameservers": [],
+    "status": [],
+    "registrant_country": null,
+    "abuse_email": "",
+    "privacy_protected": false,
+    "raw_rdap": {}
+  },
+  "page": {
+    "reachable": false,
+    "status_code": null,
+    "title": "",
+    "final_url": "https://bhujvishrantibhavan.online",
+    "redirects_to_official": false,
+    "copied_phones": [],
+    "copied_emails": [],
+    "upi_ids": [],
+    "payment_signals": [],
+    "gateways": [],
+    "advance_payment_signals": [],
+    "brand_mentions": 0,
+    "matched_institution_id": null,
+    "matched_institution_name": null,
+    "discrepancies": []
+  },
+  "takedown": {
+    "ncrp_category": "Online Financial Fraud / Fake Website / Phishing",
+    "ncrp_sub_category": "Cheating by Impersonation (Fake Temple / Dharamshala Booking)",
+    "legal_statutes": [
+      "IT Act 2000 Section 66C (Identity Theft)",
+      "IT Act 2000 Section 66D (Cheating by Personation using Computer Resource)",
+      "Bharatiya Nyaya Sanhita 2023 Sec 318(4) / 319 (Cheating & Dishonestly Inducing Delivery of Property / Personation)",
+      "IPC Section 419 / 420"
+    ],
+    "complaint_subject": "CYBERCRIME REPORT: Active Impersonation & Online Advance Booking Fraud on bhujvishrantibhavan.online",
+    "police_memo": "DIGITAL TRUST & SAFETY INITIATIVE \u2014 INCIDENT ESCALATION MEMORANDUM\nJoint Action: YatraDham.org \u00d7 Bhavnagar Police Cyber Crime Cell\nGenerated: 2026-09-10 09:56:59 UTC\n\nTARGET ENTITY: bhujvishrantibhavan.online\nTARGETED INSTITUTION: Bhuj Vishranti Bhavan\nRISK LEVEL: HIGH (55/100)\n\nTECHNICAL SNAPSHOT:\n- Primary Domain / URL: https://bhujvishrantibhavan.online/\n- Resolving IP:  (, )\n- Registrar:  (Abuse Desk: pending)\n- Scammer Helplines: +919825098765\n- Scammer UPI VPAs: Direct UPI QR\n\nEVIDENCE SUMMARY:\n- Impersonating top-rated religious stay: Bhuj Vishranti Bhavan (Bhuj) (+30)\n- Publishing unauthorized booking helpline / mobile number: +919825098765 (+25)\n\nRECOMMENDATION:\nEscalate to Gujarat State Cyber Crime Cell / I4C Portal for priority takedown and SIM/VPA freeze.",
+    "registrar_abuse_notice": "To: abuse-desk@.com\nSubject: URGENT: Cease & Desist / Immediate Domain Suspension Request \u2014 bhujvishrantibhavan.online (Active Impersonation & Pilgrim Phishing Fraud)\n\nDear Abuse & Trust/Safety Team at ,\n\nWe are writing on behalf of YatraDham.org (YatraDham E-Services Pvt Ltd) and the authorized management of Bhuj Vishranti Bhavan.\n\nWe formally request the IMMEDIATE DE-REGISTRATION AND DNS SUSPENSION of domain name: 'bhujvishrantibhavan.online' under ICANN Registrar Accreditation Agreement (RAA) Section 3.18, and your Acceptable Use Policy regarding deceptive phishing, impersonation, and online financial fraud.\n\nDomain Details:\n- Domain: bhujvishrantibhavan.online\n- Host IP: \n- Hosting Provider: \n- Detection Date: 2026-09-10 09:56:59 UTC\n\nEvidence of Illegal Activity:\nThe registrant of 'bhujvishrantibhavan.online' is intentionally impersonating Bhuj Vishranti Bhavan and YatraDham.org to deceive religious pilgrims into depositing fraudulent advance payments via unauthorized contact numbers (+919825098765) and unauthorized payment links.\n\nThis constitutes criminal fraud under Sections 66C & 66D of the IT Act 2000 and Section 318(4) of the Bharatiya Nyaya Sanhita. A formal criminal complaint has also been logged with the National Cyber Crime Reporting Portal (cybercrime.gov.in).\n\nFailure to act upon this verified abuse report may result in secondary liability under intermediary guidelines. Please confirm domain suspension by reply to info@yatradham.org.\n\nSincerely,\nDigital Trust & Legal Compliance Desk\nYatraDham.org (YatraDham E-Services Pvt Ltd)\nBhavnagar, Gujarat, India\nContact: legal@yatradham.org | +91-278-2511111",
+    "nixi_notice": "",
+    "npci_bank_freeze_request": "",
+    "google_safebrowsing_url": "https://safebrowsing.google.com/safebrowsing/report_phish/?url=https%3A%2F%2Fbhujvishrantibhavan.online%2F",
+    "target_summary": "bhujvishrantibhavan.online (Bhuj Vishranti Bhavan - Score 55/100 HIGH)"
+  },
+  "targeted_institution_id": "bhuj-vishranti-bhavan",
+  "targeted_institution_name": "Bhuj Vishranti Bhavan",
+  "first_detected": "2026-09-10T09:56:59.397291+00:00",
+  "last_seen": "2026-09-10T09:56:59.397306+00:00",
+  "is_new": true
+}
