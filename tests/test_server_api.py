@@ -142,5 +142,102 @@ class TestServerAPI(unittest.TestCase):
         self.assertIn("raw_score", trace)
         self.assertIn("risk_reasons", trace)
 
+    def test_verify_channel_official(self):
+        resp = self.client.get("/api/verify-channel?query=yatradham.org")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data.get("verdict"), "VERIFIED_OFFICIAL")
+        self.assertEqual(data.get("status"), "safe")
+
+    def test_verify_channel_scam(self):
+        # Scan a suspect domain first
+        self.client.post("/api/scan", json={"target": "bhujvishrantibhavan.online"})
+        resp = self.client.get("/api/verify-channel?query=bhujvishrantibhavan.online")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn(data.get("verdict"), ("ACTIVE_SCAM_FLAGGED", "UNKNOWN_UNVERIFIED"))
+
+    def test_case_status_lifecycle(self):
+        # Update case status
+        resp = self.client.patch(
+            "/api/cases/khatushyambooking.org/status",
+            json={
+                "status": "UNDER_REVIEW",
+                "fir_number": "FIR-2026-CYBER-9912",
+                "assigned_analyst": "Abhijeet",
+                "note": "Initial cyber investigation opened."
+            }
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json().get("new_case_status"), "UNDER_REVIEW")
+
+        # Check finding details show updated status
+        detail_resp = self.client.get("/api/findings/khatushyambooking.org")
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertEqual(detail_resp.json().get("case_status"), "UNDER_REVIEW")
+        self.assertEqual(detail_resp.json().get("fir_number"), "FIR-2026-CYBER-9912")
+
+    def test_case_notes(self):
+        resp = self.client.post(
+            "/api/cases/khatushyambooking.org/notes",
+            json={"note": "Registrar abuse ticket lodged #88219", "author": "Legal Desk"}
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        detail_resp = self.client.get("/api/findings/khatushyambooking.org")
+        notes = detail_resp.json().get("case_notes", [])
+        self.assertTrue(any("Registrar abuse ticket" in n.get("note", "") for n in notes))
+
+    def test_syndicates_endpoint(self):
+        resp = self.client.get("/api/syndicates")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("syndicates", data)
+        self.assertIsInstance(data["syndicates"], list)
+
+    def test_dispatch_abuse_email_dry_run(self):
+        resp = self.client.post(
+            "/api/takedown/dispatch-email",
+            json={
+                "host": "bhujvishrantibhavan.online",
+                "recipient_override": "abuse@test-registrar.com",
+                "dry_run": True
+            }
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data.get("success"))
+        self.assertEqual(data.get("status"), "simulated")
+        self.assertIn("audit_file", data)
+
+    def test_safebrowsing_reporting(self):
+        resp = self.client.post(
+            "/api/takedown/report-safebrowsing",
+            json={"url": "https://bhujvishrantibhavan.online/booking"}
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("google_safebrowsing_submission_url", data)
+
+    def test_evidence_snapshot_generation(self):
+        resp = self.client.post(
+            "/api/takedown/evidence-snapshot",
+            json={"host": "khatushyambooking.org"}
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data.get("status"), "success")
+        evid = data.get("evidence", {})
+        self.assertIn("sha256_html_hash", evid)
+        self.assertIn("chain_of_custody", evid)
+
+    def test_alerts_channel_test(self):
+        resp = self.client.post("/api/alerts/test")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("telegram_configured", data)
+        self.assertIn("slack_configured", data)
+        self.assertIn("whatsapp_payload_sample", data)
+
 if __name__ == "__main__":
     unittest.main()

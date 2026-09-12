@@ -1,7 +1,7 @@
 """
 Multi-Channel Alerting & Notification Subsystem.
 Dispatches critical alerts for high-risk findings (score >= 55) to Telegram,
-Slack/Discord Webhooks, Email (SMTP), and auto-exports CyberCrime Dossiers.
+Slack/Discord Webhooks, Generic SIEM/CRM Webhooks, Email (SMTP), and WhatsApp templates.
 """
 import json
 import os
@@ -20,6 +20,8 @@ class AlertDispatcher:
             "telegram_bot_token": os.environ.get("YATRADHAM_TELEGRAM_BOT_TOKEN", ""),
             "telegram_chat_id": os.environ.get("YATRADHAM_TELEGRAM_CHAT_ID", ""),
             "slack_webhook_url": os.environ.get("YATRADHAM_SLACK_WEBHOOK", ""),
+            "discord_webhook_url": os.environ.get("YATRADHAM_DISCORD_WEBHOOK", ""),
+            "generic_webhook_url": os.environ.get("YATRADHAM_GENERIC_WEBHOOK", ""),
             "alert_email_to": os.environ.get("YATRADHAM_ALERT_EMAIL", "legal@yatradham.org"),
             "alert_threshold": 55,
             "export_takedown_dir": os.path.join(
@@ -69,6 +71,33 @@ class AlertDispatcher:
         msg += "\n📄 *Action Required:* Review in Dashboard & Dispatch NCRP Dossier."
         return msg
 
+    def format_whatsapp_payload(self, finding: Dict[str, Any], recipient_phone: str = "+919876543210") -> Dict[str, Any]:
+        """Formats WhatsApp Business Cloud API compliant template payload."""
+        host = finding.get("host", "")
+        score = str(finding.get("risk_score", 0))
+        band = finding.get("risk_band", "HIGH")
+        inst = finding.get("targeted_institution_name") or "YatraDham Brand"
+
+        return {
+            "messaging_product": "whatsapp",
+            "to": recipient_phone,
+            "type": "template",
+            "template": {
+                "name": "brand_fraud_alert_urgent",
+                "language": {"code": "en"},
+                "components": [
+                    {
+                        "type": "body",
+                        "parameters": [
+                            {"type": "text", "text": inst},
+                            {"type": "text", "text": host},
+                            {"type": "text", "text": f"{score}/100 ({band})"}
+                        ]
+                    }
+                ]
+            }
+        }
+
     def send_telegram(self, text: str) -> bool:
         """Dispatches Telegram notification if bot token & chat ID are configured."""
         token = self.config.get("telegram_bot_token")
@@ -93,7 +122,7 @@ class AlertDispatcher:
             return False
 
     def send_webhook(self, finding: Dict[str, Any]) -> bool:
-        """Dispatches rich webhook payload to Slack/Discord."""
+        """Dispatches rich webhook payload to Slack."""
         webhook_url = self.config.get("slack_webhook_url")
         if not webhook_url:
             return False
@@ -120,6 +149,60 @@ class AlertDispatcher:
         except Exception:
             return False
 
+    def send_discord(self, finding: Dict[str, Any]) -> bool:
+        """Dispatches rich embed to Discord webhook."""
+        webhook_url = self.config.get("discord_webhook_url")
+        if not webhook_url:
+            return False
+        try:
+            score = finding.get("risk_score", 0)
+            color = 16723294 if score >= 75 else 16747069
+            payload = {
+                "username": "YatraDham Threat Sentinel",
+                "embeds": [{
+                    "title": f"🚨 Brand Impersonation Alert: {finding.get('host')}",
+                    "description": f"Targeting **{finding.get('targeted_institution_name', 'YatraDham')}** with Risk Score **{score}/100**",
+                    "color": color,
+                    "fields": [
+                        {"name": "Impersonator Host", "value": finding.get("host", "—"), "inline": True},
+                        {"name": "Risk Band", "value": finding.get("risk_band", "—"), "inline": True},
+                        {"name": "Hosting Provider", "value": (finding.get("host_info") or {}).get("hosting_provider", "—"), "inline": True},
+                        {"name": "Registrar", "value": (finding.get("whois") or {}).get("registrar", "—"), "inline": True}
+                    ],
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }]
+            }
+            req = urllib.request.Request(
+                webhook_url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers={"Content-Type": "application/json", "User-Agent": "YatraDham-Fraud-Monitor/2.0"}
+            )
+            with urllib.request.urlopen(req, timeout=5.0) as resp:
+                return resp.getcode() in (200, 204)
+        except Exception:
+            return False
+
+    def send_generic_webhook(self, finding: Dict[str, Any]) -> bool:
+        """Sends raw JSON finding payload to custom SIEM/CRM/n8n webhook."""
+        webhook_url = self.config.get("generic_webhook_url")
+        if not webhook_url:
+            return False
+        try:
+            payload = {
+                "event": "brand_fraud_alert",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "data": finding
+            }
+            req = urllib.request.Request(
+                webhook_url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=5.0) as resp:
+                return resp.getcode() in (200, 201, 202, 204)
+        except Exception:
+            return False
+
     def export_takedown_packet(self, finding: Dict[str, Any]) -> str:
         """Exports standalone markdown & json takedown packet to takedowns/ folder."""
         host = finding.get("host", "unknown").replace("/", "_").replace(":", "_")
@@ -139,16 +222,37 @@ class AlertDispatcher:
         """Triages finding and triggers alerts if score >= threshold and is new."""
         score = finding.get("risk_score", 0)
         is_new = finding.get("is_new", True)
-        results = {"telegram": False, "webhook": False, "exported": False}
+        results = {"telegram": False, "slack": False, "discord": False, "generic": False, "exported": False}
 
         if score >= self.config.get("alert_threshold", 55) and is_new:
-            # Auto export legal takedown packet
             exp_file = self.export_takedown_packet(finding)
             results["exported"] = bool(exp_file)
 
-            # Dispatch alerts
             tg_text = self.format_telegram_alert(finding)
             results["telegram"] = self.send_telegram(tg_text)
-            results["webhook"] = self.send_webhook(finding)
+            results["slack"] = self.send_webhook(finding)
+            results["discord"] = self.send_discord(finding)
+            results["generic"] = self.send_generic_webhook(finding)
 
         return results
+
+    def test_channels(self) -> Dict[str, Any]:
+        """Tests all configured channels with a mock finding."""
+        mock_finding = {
+            "host": "test-fraud-alert.yatradham.org.online",
+            "risk_score": 85,
+            "risk_band": "CRITICAL",
+            "targeted_institution_name": "Test Ashram / YatraDham",
+            "risk_reasons": ["Unapproved domain typosquat", "Rogue UPI payment detected"],
+            "whois": {"registrar": "Test Registrar Ltd", "created": "2026-09-01"},
+            "host_info": {"hosting_provider": "Test Cloud Provider", "host_country": "IN"},
+            "page": {"copied_phones": ["+91 9876543210"], "upi_ids": ["testscam@ybl"]}
+        }
+        return {
+            "telegram_configured": bool(self.config.get("telegram_bot_token")),
+            "slack_configured": bool(self.config.get("slack_webhook_url")),
+            "discord_configured": bool(self.config.get("discord_webhook_url")),
+            "generic_webhook_configured": bool(self.config.get("generic_webhook_url")),
+            "whatsapp_payload_sample": self.format_whatsapp_payload(mock_finding),
+            "test_dispatch_results": self.process_finding(mock_finding)
+        }

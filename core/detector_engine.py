@@ -195,6 +195,27 @@ class DetectionEngine:
                 # Extract brand mentions
                 inspection.brand_mentions = len(re.findall(r'yatradham|yatra\s*dham', body_text, re.I))
 
+                # Extract tracking tags for syndicate clustering
+                gtm_matches = list(set(re.findall(r'GTM-[A-Z0-9]{4,10}', html)))
+                ga_matches = list(set(re.findall(r'(?:UA-\d+-\d+|G-[A-Z0-9]{6,12})', html)))
+                inspection.gtm_ids = gtm_matches
+                inspection.ga_ids = ga_matches
+
+                # Extract deep UPI links and QR code indicators
+                upi_deep_links = re.findall(r'upi://pay\?[^\s"\'<>]+', html, re.I)
+                for ulink in upi_deep_links:
+                    inspection.qr_payment_links.append(ulink)
+                    pa_match = re.search(r'pa=([a-zA-Z0-9.\-_]+@[a-zA-Z0-9.\-_]+)', ulink)
+                    if pa_match:
+                        vpa = pa_match.group(1).lower()
+                        if vpa not in inspection.upi_ids:
+                            inspection.upi_ids.append(vpa)
+
+                # Check for QR code images
+                qr_imgs = soup.find_all("img", src=re.compile(r'qr|scan|upi', re.I))
+                if qr_imgs or upi_deep_links:
+                    inspection.advance_payment_signals.append("Embedded QR code / UPI deep link for advance payment")
+
                 # Check WhatsApp redirect
                 if "wa.me" in html or "api.whatsapp.com" in html:
                     inspection.advance_payment_signals.append("WhatsApp direct booking link (wa.me)")
@@ -214,7 +235,9 @@ class DetectionEngine:
                     inspection.matched_institution_name = inst.get("name")
 
                 inspection.copied_phones = xref.get("unauthorized_phones", [])
-                inspection.upi_ids = xref.get("extracted_upis", [])
+                for u in xref.get("extracted_upis", []):
+                    if u not in inspection.upi_ids:
+                        inspection.upi_ids.append(u)
                 inspection.gateways = xref.get("gateways", [])
                 inspection.advance_payment_signals.extend(xref.get("advance_signals", []))
                 inspection.discrepancies = xref.get("discrepancies", [])

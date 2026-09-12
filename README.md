@@ -1,83 +1,92 @@
-# 🛡️ YatraDham Brand & Ashram Fraud Monitor v2.0
+# 🛡️ YatraDham Brand & Ashram Fraud Monitor v2.1
 **Initiative from YatraDham.Org**
 
 ---
 
 ## 📌 Executive Summary & Architectural Upgrade
 
-The original prototype performed an initial sweep of brand typosquats (e.g., `yatradham-*.com`), certificate transparency logs, and open-web queries. While it correctly identified that YatraDham's own lookalikes (`yatradham.in`, `yatradham.com`, `yatradham.net`, etc.) safely 301-redirect to `yatradham.org`, it suffered from **three critical operational blindspots**:
+The original prototype performed an initial sweep of brand typosquats (e.g., `yatradham-*.com`), certificate transparency logs, and open-web queries. While it correctly identified that YatraDham's own lookalikes (`yatradham.in`, `yatradham.com`, `yatradham.net`, etc.) safely 301-redirect to `yatradham.org`, real-world cyber fraud operators employ multi-layered evasion tactics:
 
-1. **The Ashram & Dharamshala Impersonation Blindspot**:
-   - In real-world cyber fraud, scammers rarely typosquat `yatradham.org` directly. Instead, they **impersonate specific high-demand Dharamshalas and Ashrams directly** (e.g., *Bhuj Vishranti Bhavan*, *Shree Khatu Shyam Ji Mandir*, *Salasar Balaji Dharamshala*, *Kedarnath GMVN Cottages*, *Ujjain Mahakal Bhakta Niwas*).
+1. **The Ashram & Dharamshala Impersonation Vector**:
+   - Scammers rarely typosquat `yatradham.org` directly. Instead, they **impersonate specific high-demand Dharamshalas and Ashrams directly** (e.g., *Bhuj Vishranti Bhavan*, *Shree Khatu Shyam Ji Mandir*, *Salasar Balaji Dharamshala*, *Kedarnath GMVN Cottages*, *Ujjain Mahakal Bhakta Niwas*).
    - Scammers register lookalike domains, create fake Google Business Profiles / YouTube videos / Facebook pages with unauthorized mobile numbers, and dupe devotees into transferring ₹1,000–₹2,000 "advance token deposits" to personal UPI QR codes.
-2. **False-Positive UPI Tagging**:
-   - The previous regex matched corporate bank and grievance emails (e.g., `creditcards@axisbank`, `nodal.officer@axisbank`) and incorrectly penalized them with +25 risk points as "direct UPI collection".
-3. **Missing Law Enforcement Dossier & Runnable Pipeline**:
-   - The initial export only contained static HTML/JSON files without an automated executable Python engine, cross-referencing ground truth registry, or statutory compliance mapping for the **National Cyber Crime Reporting Portal (cybercrime.gov.in)**.
+2. **Coordinated Scammer Syndicates**:
+   - Criminal networks operate dozens of disposable domains simultaneously sharing identical UPI VPAs, mule phone numbers, hosting subnets, and Google Tag Manager / Analytics containers.
+3. **Legal & Law Enforcement Friction**:
+   - Cyber complaints require strict evidentiary rigor: court-admissible SHA-256 integrity hashes, TLS certificate fingerprints, and formal statutory filings for both the **National Cyber Crime Reporting Portal (cybercrime.gov.in)** and the **Department of Telecommunications (DoT) Sanchar Saathi / Chakshu portal** for emergency SIM/IMEI blocking.
 
 ---
 
-## 🚀 Key Upgrades in Version 2.0
+## 🚀 Key Capabilities in Version 2.1
 
-### 1. Ground-Truth Verified Institution Registry (`data/verified_institutions.json`)
-- Maintained database of verified top-rated Dharamshalas, Ashrams, and Trust accommodations across India.
-- Stores official websites, verified landline/mobile numbers, official trust emails, payment policies, and vulnerability ratings.
-- Entity Cross-Referencing Engine (`core/entity_cross_reference.py`) cross-checks any scraped phone number against verified trust contacts and immediately flags mismatched mobile numbers.
+### 1. Persistent SQLite Enterprise Storage & Case Lifecycle Management
+- **SQLite Persistence (`core/database.py`)**: Zero-leak connection-scoped database layer storing findings, inspection artifacts, investigation notes, and status histories.
+- **Automated Migration**: Seamlessly ingests legacy `dashboard/findings.json` into SQLite on startup without data loss.
+- **Case Lifecycle State Machine**: Full workflow transition tracking:
+  `NEW` ➔ `UNDER_REVIEW` ➔ `TAKEDOWN_SENT` ➔ `BLOCKED` ➔ `RESOLVED` ➔ `WHITELISTED`.
+- **Interactive UI Controls**: Operators can update case statuses, add FIR numbers, and append timestamped investigator notes directly from the dashboard.
 
-### 2. Zero-False-Positive UPI & Payment Gateway Scanner
-- Precision filter isolates genuine NPCI Payment Service Provider (PSP) handles (`@paytm`, `@ybl`, `@upi`, `@axl`, `@okhdfcbank`, etc.) and personal 10-digit mobile prefixes (`9XXXXXXXXX@...`).
-- Excludes legitimate corporate bank contact addresses (`creditcards@...`, `nodal.officer@...`, `support@...`, `abuse@...`).
-- Scans for advance payment pressure language in English and Hindi (*"advance token amount"*, *"send screenshot on WhatsApp"*, *"room held for 15 minutes"*).
+### 2. Criminal Syndicate Graph Clustering
+- **Syndicate Correlation Engine**: Automatically detects coordinated scam rings by linking targets sharing:
+  - Identical unauthorized phone / WhatsApp numbers (`wa.me/91...`)
+  - Shared scammer UPI VPAs (`@paytm`, `@ybl`, etc.)
+  - Shared Google Tag Manager (`GTM-XXXX`) and Google Analytics (`UA-...`, `G-...`) IDs
+  - Colocated hosting providers and `/24` IP subnets
+- **Interactive Syndicate Inspector**: View mapped syndicates, risk profiles, and all linked fake booking portals in a dedicated dashboard tab.
 
-### 3. Multi-Channel Detection Engine (`core/detector_engine.py`)
-- **Channel 1: Ashram & Brand Permutation Engine**: Generates targeted typosquats for both brand tokens and high-risk religious shrines across `.in`, `.com`, `.org`, `.co.in`, `.online`.
-- **Channel 2: Certificate Transparency Logs**: Queries `crt.sh` for newly issued SSL certificates.
-- **Channel 3: Live Search Scraper**: Scrapes DuckDuckGo / Bing / open web for fake booking desks, unauthorized customer care numbers, and refund scams.
-- **Channel 4: Social Media & UGC Surveillance**: Analyzes Facebook pages, Instagram bios, YouTube descriptions, and WhatsApp direct links (`wa.me/91...`).
-- **Channel 5: Deep Page Inspector**: Fetches live HTML, inspects redirects, extracts embedded gateways (Razorpay, Cashfree, PayU), and extracts payment links.
+### 3. Automated Abuse Dispatch & Google Safe Browsing Integration
+- **Automated SMTP Abuse Dispatcher (`core/takedown_dispatcher.py`)**: One-click RFC 2142 compliant abuse email dispatch to domain registrars, hosting providers, and cloud CDNs with dry-run simulation mode and timestamped audit logs.
+- **Google Safe Browsing & URLhaus Submission**: Generates automated JSON payloads formatted for Google Web Risk / Safe Browsing client APIs and abuse databases.
+- **Multi-Channel Alert Dispatcher (`core/notifier.py`)**: Real-time webhook notifications for Telegram Bot (Markdown), Slack (color-coded blocks), Discord (rich embeds), WhatsApp Business templates, and generic SIEM/SOAR webhooks.
 
-### 4. Statutory Takedown Dossier Generator (`core/takedown_generator.py`)
-For every finding scoring ≥ 55, automatically builds an evidence packet:
-- **NCRP Complaint Format (cybercrime.gov.in)**: Formatted under *Online Financial Fraud / Fake Website / Cheating by Personation*.
-- **Statutory Law Citations**: Cites Sections 66C & 66D of Information Technology Act 2000, and Sections 318(4) & 319 of Bharatiya Nyaya Sanhita (BNS) 2023 (formerly Sections 419/420 IPC).
-- **Gujarat / Bhavnagar Cyber Police Memorandum**: Ready for official police submission.
-- **Registrar Abuse Notice**: RFC 2142 compliant Cease & Desist citing ICANN RAA Section 3.18.
-- **NIXI (.IN Registry) Notice**: Fast-track suspension demand for Indian ccTLD domains.
-- **NPCI UPI Freeze Notice**: Demands immediate debit freeze on scammer VPAs and mule bank accounts.
+### 4. Court-Admissible Forensic Evidence & Chakshu DoT Packets
+- **Forensic Evidence Capture (`core/evidence_capture.py`)**:
+  - Captures raw page HTML and computes cryptographic **SHA-256 integrity hashes** for legal chain-of-custody.
+  - Extracts TLS certificate thumbprints, SAN extensions, and issuer authorities.
+  - Automatically generates **900×520 Court Exhibit Cards (PNG)** formatted with cybercrime classification tags, timestamping, and legal statutory disclaimers.
+- **DoT Chakshu Incident Reports (`core/takedown_generator.py`)**: Formal law enforcement dossier for the Department of Telecommunications (Sanchar Saathi) requesting immediate mobile MSISDN disconnection and device IMEI blacklisting under Section 19 of the Telecommunications Act 2023.
 
-### 5. Tactical Threat Intelligence Dashboard (`dashboard/index.html`)
-- Dark tactical UI with live KPI metrics and trend indicators.
-- Side-by-side **Discrepancy Inspector** (Scammer Evidence vs Genuine Institution Ground Truth).
-- Interactive **Threat Quick-Scanner**: Paste any suspect domain, phone, or UPI handle to get an instant verdict.
-- One-click copy buttons for NCRP complaint text, Police Memos, and Registrar Abuse notices.
-- Verified Religious Institution Directory tab.
+### 5. Public Pilgrim Safety Verification API & Widget
+- **Devotee Verification Engine (`GET /api/verify-channel?query=...`)**:
+  - Devotees can verify any website URL, mobile number, or UPI ID before sending payment.
+  - Cross-references verified trust databases and real-time blacklists to deliver immediate verdicts: `GENUINE_VERIFIED`, `KNOWN_SCAM`, `SUSPICIOUS`, or `UNVERIFIED`.
+- **Interactive Dashboard Widget**: Embedded safety checker tab allowing pilgrims and customer support agents to conduct rapid safety audits.
 
 ---
 
-## 🛠 Directory Structure
+### 🛠 Directory Structure
 
 ```
 yatradham-brand-fraud-monitor/
 ├── data/
-│   └── verified_institutions.json     # Ground truth registry of Ashrams & YatraDham brand
+│   ├── verified_institutions.json     # Ground truth registry of Ashrams & YatraDham brand
+│   └── fraud_monitor.db              # SQLite enterprise database with auto-migration
 ├── core/
-│   ├── models.py                      # Data models & schemas
+│   ├── models.py                      # Data models, Enums, CaseStatus, Inspection schemas
+│   ├── database.py                    # SQLite persistence layer, connection scope & syndicates
 │   ├── entity_cross_reference.py      # Cross-referencing & signal extraction
-│   ├── detector_engine.py             # 5-channel discovery & deep crawler
+│   ├── detector_engine.py             # 5-channel discovery, GTM/GA/QR/UPI deep crawler
 │   ├── enrichment.py                  # DNS, RDAP/WHOIS, ASN, IP Geolocation, SSL
 │   ├── scorer.py                      # Explainable 0-100 weighted risk scorer
-│   ├── takedown_generator.py          # NCRP, Police, Registrar, NPCI legal dossiers
-│   └── notifier.py                    # Multi-channel alerts (Telegram, Slack, Email)
+│   ├── evidence_capture.py            # SHA-256 HTML integrity & PNG court exhibit generator
+│   ├── takedown_generator.py          # NCRP, Police, Registrar, NPCI, Chakshu DoT dossiers
+│   ├── takedown_dispatcher.py         # Automated RFC 2142 abuse dispatcher & Safe Browsing
+│   └── notifier.py                    # Multi-channel alerts (Telegram, Slack, Discord, WA)
+├── takedowns/
+│   ├── dispatched_notices/            # Timestamped audit logs of dispatched abuse emails
+│   └── evidence_snapshots/           # Generated court-admissible PNG evidence cards
 ├── dashboard/
-│   ├── index.html                     # Tactical threat intelligence dashboard
-│   └── findings.json                  # Live output database
+│   ├── index.html                     # Tactical threat intelligence dashboard & pilgrim widget
+│   └── findings.json                  # Ingested baseline findings database
 ├── scripts/
 │   ├── run_scheduled.bat              # Batch runner for automated twice-daily sweeps
 │   └── schedule_task.ps1              # Windows Task Scheduler registrar (8 AM & 8 PM IST)
 ├── tests/
-│   └── test_monitor.py                # Pre-production automated test suite
+│   ├── test_monitor.py                # Core engine & regression test suite
+│   └── test_server_api.py             # FastAPI REST endpoints & lifecycle integration tests
 ├── run_sweep.py                       # CLI orchestrator
-└── SWEEP_REPORT.md                    # Executive sweep report
+├── server.py                          # FastAPI ASGI application server (v2.1.0)
+└── start_server.py                    # Production server starter with port failover
 ```
 
 ---
@@ -90,6 +99,26 @@ The live application runs on **Port 8090** (free and decoupled from default port
 - **Interactive Swagger REST API Docs**: [http://127.0.0.1:8090/docs](http://127.0.0.1:8090/docs)
 - **API Health Telemetry**: [http://127.0.0.1:8090/api/health](http://127.0.0.1:8090/api/health)
 - **System Diagnostics & Telemetry**: [http://127.0.0.1:8090/api/debug/system](http://127.0.0.1:8090/api/debug/system)
+
+### REST API Endpoints:
+
+| Method | Endpoint | Description |
+|:---:|---|---|
+| `GET` | `/api/health` | Service health, version, uptime, and database metrics |
+| `GET` | `/api/findings` | Retrieve all detected threat records with filter by band / status |
+| `GET` | `/api/findings/{host}` | Detailed investigation report for a specific host |
+| `POST` | `/api/scan` | On-demand scan of domain, URL, mobile number, or UPI ID |
+| `PATCH` | `/api/cases/{host}/status` | Update case lifecycle status (`NEW` -> `RESOLVED`) |
+| `POST` | `/api/cases/{host}/notes` | Append investigator case notes with timestamp |
+| `GET` | `/api/syndicates` | Retrieve mapped scammer syndicates with linked threat nodes |
+| `POST` | `/api/syndicates/rebuild` | Re-run graph clustering algorithm over active database |
+| `GET` | `/api/verify-channel` | Public Pilgrim Safety Verifier for URLs, phones, or UPI IDs |
+| `POST` | `/api/takedown/dispatch-email`| Dispatch RFC 2142 abuse notice (with dry-run simulation) |
+| `POST` | `/api/takedown/report-safebrowsing`| Submit threat payload to Google Safe Browsing / Web Risk |
+| `POST` | `/api/takedown/evidence-snapshot`| Generate SHA-256 hash & PNG Court Exhibit Card |
+| `POST` | `/api/alerts/test` | Test webhook integrations (Telegram, Slack, Discord, WhatsApp) |
+| `GET` | `/api/export/csv` | Export entire threat database as CSV |
+| `GET` | `/api/export/json` | Export entire threat database as JSON |
 
 ### Starting the Server:
 

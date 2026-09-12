@@ -1,7 +1,7 @@
 """
 YatraDham Brand & Ashram Fraud Monitor — Production FastAPI Backend Server.
 Provides REST APIs for real-time scanning, automated sweep orchestration,
-forensic enrichment, takedown generation, and verified registry management.
+forensic enrichment, takedown generation, case management, and verified registry management.
 """
 import asyncio
 import csv
@@ -22,23 +22,22 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, Fil
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-# Ensure local imports work
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from core.models import FraudFinding, ThreatCategory, RiskBand, EvidenceItem
+from core.models import FraudFinding, ThreatCategory, RiskBand, EvidenceItem, CaseStatus
 from core.entity_cross_reference import EntityCrossReferencer
 from core.enrichment import ForensicEnricher
 from core.scorer import FraudRiskScorer
 from core.detector_engine import DetectionEngine
 from core.takedown_generator import TakedownGenerator
+from core.takedown_dispatcher import TakedownDispatcher
+from core.evidence_capture import EvidenceCapture
 from core.notifier import AlertDispatcher
+from core.database import DatabaseManager
 from run_sweep import FraudSweepRunner, FINDINGS_PATH, DATA_DIR
 
-# ---------------------------------------------------------------------------
-# Server Runtime State & Diagnostics
-# ---------------------------------------------------------------------------
 SERVER_START_TIME = time.time()
 DEBUG_MODE = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
 
@@ -69,28 +68,21 @@ def get_memory_info() -> Dict[str, float]:
                     ('PeakPagefileUsage', ctypes.c_size_t),
                     ('PrivateUsage', ctypes.c_size_t),
                 ]
-            GetProcessMemoryInfo = ctypes.windll.psapi.GetProcessMemoryInfo
-            GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(PROCESS_MEMORY_COUNTERS_EX), wintypes.DWORD]
-            GetProcessMemoryInfo.restype = wintypes.BOOL
             counters = PROCESS_MEMORY_COUNTERS_EX()
             counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS_EX)
             handle = ctypes.windll.kernel32.GetCurrentProcess()
-            if GetProcessMemoryInfo(handle, ctypes.byref(counters), counters.cb):
+            if ctypes.windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(counters), counters.cb):
                 res["rss_mb"] = round(counters.WorkingSetSize / (1024 * 1024), 2)
                 res["vms_mb"] = round(counters.PagefileUsage / (1024 * 1024), 2)
-        elif os.path.exists("/proc/self/status"):
-            with open("/proc/self/status", "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.startswith("VmRSS:"):
-                        res["rss_mb"] = round(int(line.split()[1]) / 1024, 2)
-                    elif line.startswith("VmSize:"):
-                        res["vms_mb"] = round(int(line.split()[1]) / 1024, 2)
+        else:
+            import resource
+            usage = resource.getrusage(resource.RUSAGE_SELF)
+            res["rss_mb"] = round(usage.ru_maxrss / 1024.0, 2)
     except Exception:
         pass
     return res
 
-def test_network_connectivity() -> Dict[str, Any]:
-    """Tests egress DNS resolution and target reachability."""
+def test_network_connectivity() -> Dict[str, bool]:
     import socket
     dns_ok = False
     try:
@@ -106,12 +98,11 @@ def test_network_connectivity() -> Dict[str, Any]:
 
 app = FastAPI(
     title="YatraDham Brand & Ashram Fraud Monitor API",
-    description="Live Cyber Threat Intelligence and Fraud Prevention API for Dharamshalas and Ashrams — Initiative from YatraDham.Org",
-    version="2.0.0",
+    description="Live Cyber Threat Intelligence and Brand Protection API for Dharamshalas and Ashrams — Initiative from YatraDham.Org",
+    version="2.1.0",
     debug=DEBUG_MODE
 )
 
-# Enable CORS for external dashboards / integrations
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -121,12 +112,22 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
-# Global State & Sweep Orchestration
+# Global Core Services
 # ---------------------------------------------------------------------------
 runner = FraudSweepRunner()
+db_manager = DatabaseManager()
+takedown_dispatcher = TakedownDispatcher()
+evidence_capture = EvidenceCapture()
+
+# Initial DB migration from existing JSON
+if os.path.exists(FINDINGS_PATH):
+    migrated_count = db_manager.migrate_from_json(FINDINGS_PATH)
+    if migrated_count > 0:
+        logger.info(f"Synchronized {migrated_count} initial findings into SQLite database.")
+        db_manager.cluster_syndicates()
 
 sweep_state = {
-    "status": "idle",             # "idle" | "running" | "completed" | "error"
+    "status": "idle",
     "progress_percent": 0,
     "current_step": "System Ready",
     "started_at": None,
@@ -153,89 +154,108 @@ def background_sweep_worker(quick: bool):
             sweep_state["progress_percent"] = 30
             sweep_state["current_step"] = "Running multi-channel sweeps (DNS, crt.sh, open web)..."
 
-        # Execute actual sweep
         payload = runner.run_sweep(quick=quick)
+
+        # Sync results to DB
+        findings = payload.get("findings", [])
+        for f in findings:
+            db_manager.upsert_finding(f)
+        db_manager.cluster_syndicates()
 
         with sweep_lock:
             sweep_state["status"] = "completed"
             sweep_state["progress_percent"] = 100
-            sweep_state["current_step"] = f"Completed sweep on {payload.get('hosts_examined', 0)} hosts"
+            sweep_state["current_step"] = f"Sweep Complete — Scanned {len(findings)} hosts."
             sweep_state["finished_at"] = datetime.now(timezone.utc).isoformat()
-            sweep_state["duration_s"] = payload.get("duration_s", 0)
 
     except Exception as e:
+        logger.error(f"Background sweep failed: {e}", exc_info=True)
         with sweep_lock:
             sweep_state["status"] = "error"
             sweep_state["last_error"] = str(e)
             sweep_state["current_step"] = f"Error: {e}"
 
 # ---------------------------------------------------------------------------
-# Request & Response Schemas
+# Request Schemas
 # ---------------------------------------------------------------------------
 class ScanRequest(BaseModel):
-    target: str = Field(..., description="Suspect URL, domain, phone number, WhatsApp link, or UPI handle")
-    debug: Optional[bool] = Field(default=False, description="Whether to include detailed step-by-step diagnostic trace in response")
+    target: str = Field(..., description="Target domain, URL, phone number, or UPI ID to inspect")
+    debug: bool = Field(False, description="Whether to include detailed step-by-step diagnostic trace")
 
 class DebugToggleRequest(BaseModel):
-    enabled: bool = Field(..., description="Enable or disable deep debug diagnostics")
+    enabled: bool = Field(..., description="Enable or disable deep debug logs and verbose metrics")
 
 class AddInstitutionRequest(BaseModel):
     id: str
     name: str
-    city: str
-    state: str
-    category: str = "Dharamshala"
     official_website: str
-    verified_phones: List[str]
-    verified_emails: List[str] = []
-    payment_policy: str
-    vulnerability_level: str = "HIGH"
-    keywords: List[str] = []
+    official_phones: List[str] = []
+    verified_upis: List[str] = []
+    official_trust_account: Optional[str] = None
+    known_scam_domains: List[str] = []
+    risk_level: str = "HIGH"
+
+class CaseStatusUpdateRequest(BaseModel):
+    status: str = Field(..., description="NEW, UNDER_REVIEW, TAKEDOWN_SENT, BLOCKED, RESOLVED, WHITELISTED")
+    fir_number: Optional[str] = None
+    registrar_ticket: Optional[str] = None
+    assigned_analyst: Optional[str] = None
+    note: Optional[str] = None
+
+class CaseNoteRequest(BaseModel):
+    note: str
+    author: Optional[str] = "Analyst"
+
+class DispatchAbuseEmailRequest(BaseModel):
+    host: str
+    recipient_override: Optional[str] = None
+    custom_notes: Optional[str] = None
+    dry_run: Optional[bool] = None
+
+class SafeBrowsingRequest(BaseModel):
+    url: str
+
+class EvidenceSnapshotRequest(BaseModel):
+    host: str
 
 # ---------------------------------------------------------------------------
-# API Endpoints
+# System & Diagnostic Endpoints
 # ---------------------------------------------------------------------------
-
 @app.get("/api/health", tags=["System"])
-def get_health():
-    """Returns server operational health, active engine status, and sweep metadata."""
+def health_check():
+    """Health check for load balancers and Render."""
+    uptime = round(time.time() - SERVER_START_TIME, 2)
     is_render = bool(os.environ.get("RENDER") or os.environ.get("RENDER_SERVICE_ID"))
     return {
         "status": "healthy",
         "service": "YatraDham Brand & Ashram Fraud Monitor",
         "framework": "Initiative from YatraDham.Org",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "uptime_seconds": round(time.time() - SERVER_START_TIME, 2),
+        "uptime_seconds": uptime,
         "debug_mode": DEBUG_MODE,
         "render_detected": is_render,
         "verified_institutions_loaded": len(runner.ecr.institutions),
-        "active_records_cached": len(runner.history),
+        "database_storage": "SQLite3 (Persistent)",
         "sweep_status": sweep_state["status"]
     }
 
 @app.get("/api/debug/system", tags=["Debugging & Diagnostics"])
-def get_debug_system_info():
-    """Returns deep internal system diagnostics, memory usage, threads, and environment flags."""
-    global DEBUG_MODE
-    findings_count = 0
-    if os.path.exists(FINDINGS_PATH):
-        try:
-            with open(FINDINGS_PATH, "r", encoding="utf-8") as f:
-                findings_count = len(json.load(f).get("findings", []))
-        except Exception:
-            pass
-
+def get_system_debug_info():
+    """Comprehensive system diagnostics."""
+    uptime = round(time.time() - SERVER_START_TIME, 2)
     is_render = bool(os.environ.get("RENDER") or os.environ.get("RENDER_SERVICE_ID"))
+    mem = get_memory_info()
     return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "server_uptime_seconds": uptime,
+        "uptime_seconds": uptime,
         "debug_mode": DEBUG_MODE,
-        "server_uptime_seconds": round(time.time() - SERVER_START_TIME, 2),
         "system": {
-            "python_version": sys.version,
-            "platform": sys.platform,
             "pid": os.getpid(),
             "active_threads": threading.active_count(),
-            "thread_names": [t.name for t in threading.enumerate()],
-            "memory": get_memory_info()
+            "python_version": sys.version,
+            "platform": sys.platform,
+            "memory": mem,
         },
         "environment": {
             "is_render": is_render,
@@ -245,19 +265,15 @@ def get_debug_system_info():
             "debug_env": os.environ.get("DEBUG", "false")
         },
         "storage": {
-            "findings_path": FINDINGS_PATH,
-            "findings_exists": os.path.exists(FINDINGS_PATH),
-            "findings_size_bytes": os.path.getsize(FINDINGS_PATH) if os.path.exists(FINDINGS_PATH) else 0,
-            "cached_findings_count": findings_count,
-            "data_directory": DATA_DIR,
-            "verified_institutions_count": len(runner.ecr.institutions)
+            "database_path": db_manager.db_path,
+            "findings_cached": len(db_manager.get_all_findings(limit=5000)),
+            "institutions_count": len(runner.ecr.institutions)
         },
         "network": test_network_connectivity()
     }
 
 @app.post("/api/debug/toggle", tags=["Debugging & Diagnostics"])
 def toggle_debug_mode(req: DebugToggleRequest):
-    """Dynamically activates or deactivates Debug Mode at runtime."""
     global DEBUG_MODE
     DEBUG_MODE = req.enabled
     logging.getLogger().setLevel(logging.DEBUG if DEBUG_MODE else logging.INFO)
@@ -268,17 +284,18 @@ def toggle_debug_mode(req: DebugToggleRequest):
         "message": f"Debug mode is now {'ENABLED' if DEBUG_MODE else 'DISABLED'}"
     }
 
+@app.post("/api/alerts/test", tags=["Alerts"])
+def test_alerts():
+    """Tests all configured notification channels (Telegram, Slack, Discord, WhatsApp)."""
+    return runner.dispatcher.test_channels()
+
+# ---------------------------------------------------------------------------
+# Analytics & Findings Endpoints
+# ---------------------------------------------------------------------------
 @app.get("/api/stats", tags=["Analytics"])
 def get_stats():
     """Returns live KPI counters and threat telemetry across all channels."""
-    findings = []
-    if os.path.exists(FINDINGS_PATH):
-        try:
-            with open(FINDINGS_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                findings = data.get("findings", [])
-        except Exception:
-            pass
+    findings = db_manager.get_all_findings(limit=2000)
 
     hi = [f for f in findings if f.get("risk_score", 0) >= 55 and f.get("risk_band") != "BRAND-OWNED"]
     crit = [f for f in findings if f.get("risk_score", 0) >= 75 and f.get("risk_band") != "BRAND-OWNED"]
@@ -288,6 +305,7 @@ def get_stats():
     ashram_attacks = [f for f in findings if f.get("targeted_institution_name") and f.get("risk_score", 0) >= 35]
     phone_attacks = [f for f in findings if (f.get("page", {}).get("copied_phones") or [])]
     upi_attacks = [f for f in findings if (f.get("page", {}).get("upi_ids") or [])]
+    cases_open = [f for f in findings if f.get("case_status") in ("NEW", "UNDER_REVIEW", "TAKEDOWN_SENT")]
 
     return {
         "total_hosts_examined": len(findings),
@@ -299,6 +317,7 @@ def get_stats():
         "ashram_impersonations": len(ashram_attacks),
         "fraudulent_helplines_detected": len(phone_attacks),
         "scammer_upi_handles_detected": len(upi_attacks),
+        "active_cases_open": len(cases_open),
         "last_sweep_timestamp": sweep_state.get("finished_at") or datetime.now(timezone.utc).isoformat()
     }
 
@@ -306,29 +325,17 @@ def get_stats():
 def list_findings(
     risk_band: Optional[str] = None,
     threat_category: Optional[str] = None,
+    status: Optional[str] = None,
     search: Optional[str] = None,
     min_score: int = 0,
     limit: int = 100,
     offset: int = 0
 ):
-    """Lists scanned hosts with flexible filtering and pagination."""
-    findings = []
-    if os.path.exists(FINDINGS_PATH):
-        try:
-            with open(FINDINGS_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                findings = data.get("findings", [])
-        except Exception:
-            pass
+    """Lists scanned hosts from database with flexible filtering, case status, and pagination."""
+    findings = db_manager.get_all_findings(limit=2000, min_score=min_score, band=risk_band, status=status)
 
-    # Filtering
     filtered = []
     for f in findings:
-        score = f.get("risk_score", 0)
-        if score < min_score:
-            continue
-        if risk_band and f.get("risk_band", "").upper() != risk_band.upper():
-            continue
         if threat_category and f.get("threat_category", "").upper() != threat_category.upper():
             continue
         if search:
@@ -341,9 +348,6 @@ def list_findings(
                 continue
         filtered.append(f)
 
-    # Sort descending by score
-    filtered.sort(key=lambda x: x.get("risk_score", 0), reverse=True)
-
     return {
         "total": len(filtered),
         "limit": limit,
@@ -353,29 +357,135 @@ def list_findings(
 
 @app.get("/api/findings/{host:path}", tags=["Findings"])
 def get_finding_detail(host: str):
-    """Retrieves full forensic attribution, signals, and takedown packet for a specific host."""
+    """Retrieves full forensic attribution, case notes, and takedown packet for a specific host."""
     clean_host = host.replace("https://", "").replace("http://", "").split("/")[0].strip().lower()
-    if os.path.exists(FINDINGS_PATH):
-        try:
-            with open(FINDINGS_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                for item in data.get("findings", []):
-                    if item.get("host", "").lower() == clean_host:
-                        return item
-        except Exception:
-            pass
+    item = db_manager.get_finding(clean_host)
+    if item:
+        return item
 
-    # If not in cache, inspect live
+    # Inspect live if not found
     live_finding = runner.inspect_single_host(clean_host)
-    return live_finding.to_dict()
+    db_manager.upsert_finding(live_finding.to_dict())
+    return db_manager.get_finding(clean_host) or live_finding.to_dict()
 
+# ---------------------------------------------------------------------------
+# Case Management Endpoints
+# ---------------------------------------------------------------------------
+@app.patch("/api/cases/{host:path}/status", tags=["Case Management"])
+def update_case_status(host: str, req: CaseStatusUpdateRequest):
+    """Updates case lifecycle status (NEW, UNDER_REVIEW, TAKEDOWN_SENT, BLOCKED, RESOLVED, WHITELISTED)."""
+    clean_host = host.replace("https://", "").replace("http://", "").split("/")[0].strip().lower()
+    valid_statuses = [e.value for e in CaseStatus]
+    if req.status.upper() not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status '{req.status}'. Must be one of: {valid_statuses}")
+
+    success = db_manager.update_case_status(
+        host=clean_host,
+        status=req.status,
+        fir_number=req.fir_number,
+        registrar_ticket=req.registrar_ticket,
+        assigned_analyst=req.assigned_analyst
+    )
+    if req.note:
+        db_manager.add_case_note(clean_host, req.note, author=req.assigned_analyst or "Analyst")
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Host record not found")
+    return {"status": "success", "host": clean_host, "new_case_status": req.status.upper()}
+
+@app.post("/api/cases/{host:path}/notes", tags=["Case Management"])
+def add_case_note(host: str, req: CaseNoteRequest):
+    """Appends an investigative note or incident update to a host."""
+    clean_host = host.replace("https://", "").replace("http://", "").split("/")[0].strip().lower()
+    db_manager.add_case_note(clean_host, req.note, author=req.author or "Analyst")
+    return {"status": "success", "message": "Note recorded"}
+
+# ---------------------------------------------------------------------------
+# Threat Syndicates & Correlation
+# ---------------------------------------------------------------------------
+@app.get("/api/syndicates", tags=["Threat Syndicates"])
+def get_syndicates():
+    """Returns detected scammer criminal syndicates clustered by shared phones, UPI VPAs, and tracking tags."""
+    return {
+        "syndicates": db_manager.cluster_syndicates()
+    }
+
+@app.post("/api/syndicates/rebuild", tags=["Threat Syndicates"])
+def rebuild_syndicates():
+    """Forces re-clustering of all threat indicators."""
+    syn = db_manager.cluster_syndicates()
+    return {"status": "success", "syndicate_count": len(syn), "syndicates": syn}
+
+# ---------------------------------------------------------------------------
+# Public Pilgrim Verification Endpoint
+# ---------------------------------------------------------------------------
+@app.get("/api/verify-channel", tags=["Pilgrim Safety Verification"])
+def verify_channel(query: str = Query(..., description="Phone, UPI ID, or URL to check")):
+    """
+    Public-Facing Pilgrim Protection API.
+    Instantly verifies whether a booking channel, phone number, or UPI ID is officially verified
+    or identified in active cyber fraud campaigns.
+    """
+    return db_manager.verify_channel(query)
+
+# ---------------------------------------------------------------------------
+# Automated Takedown & Dispatch Endpoints
+# ---------------------------------------------------------------------------
+@app.post("/api/takedown/dispatch-email", tags=["Takedown"])
+def dispatch_abuse_email(req: DispatchAbuseEmailRequest):
+    """
+    1-Click Automated Abuse Email Dispatch.
+    Dispatches formal Cease & Desist notices to Registrar & Host abuse desks.
+    """
+    clean_host = req.host.replace("https://", "").replace("http://", "").split("/")[0].strip().lower()
+    finding_data = db_manager.get_finding(clean_host)
+    if not finding_data:
+        finding_data = runner.inspect_single_host(clean_host).to_dict()
+
+    res = takedown_dispatcher.dispatch_abuse_email(
+        finding_data=finding_data,
+        recipient_override=req.recipient_override,
+        custom_notes=req.custom_notes,
+        dry_run=req.dry_run
+    )
+    if res.get("success"):
+        # Auto-update status to TAKEDOWN_SENT
+        db_manager.update_case_status(clean_host, "TAKEDOWN_SENT")
+        db_manager.add_case_note(clean_host, f"Abuse notice dispatched to {res.get('recipient')}. Status: {res.get('status')}")
+
+    return res
+
+@app.post("/api/takedown/report-safebrowsing", tags=["Takedown"])
+def report_safebrowsing(req: SafeBrowsingRequest):
+    """Prepares Google Safe Browsing and Microsoft SmartScreen submission URLs."""
+    return takedown_dispatcher.report_safebrowsing_portal(req.url)
+
+@app.post("/api/takedown/evidence-snapshot", tags=["Takedown"])
+def capture_evidence(req: EvidenceSnapshotRequest):
+    """
+    Creates a court-admissible forensic evidence snapshot and visual PNG card with SHA-256 integrity hash.
+    """
+    clean_host = req.host.replace("https://", "").replace("http://", "").split("/")[0].strip().lower()
+    finding_data = db_manager.get_finding(clean_host)
+    if not finding_data:
+        finding_data = runner.inspect_single_host(clean_host).to_dict()
+
+    snapshot = evidence_capture.capture_snapshot(finding_data)
+    # Return card relative path for UI rendering
+    if snapshot.get("visual_evidence_card"):
+        card_basename = os.path.basename(snapshot["visual_evidence_card"])
+        snapshot["visual_card_url"] = f"/evidence/{card_basename}"
+
+    return {
+        "status": "success",
+        "evidence": snapshot
+    }
+
+# ---------------------------------------------------------------------------
+# Live Scanning & Sweep Endpoints
+# ---------------------------------------------------------------------------
 @app.post("/api/scan", tags=["Live Scanning"])
 def scan_target(req: ScanRequest):
-    """
-    On-Demand Live Forensic Inspection Endpoint.
-    Analyzes any suspect URL, domain, WhatsApp link, phone, or UPI handle in real time.
-    Supports detailed deep diagnostic trace when debug=True or when server DEBUG_MODE is active.
-    """
     target = req.target.strip()
     if not target:
         raise HTTPException(status_code=400, detail="Target cannot be empty")
@@ -384,13 +494,21 @@ def scan_target(req: ScanRequest):
     t0 = time.perf_counter()
 
     finding = runner.inspect_single_host(target)
+    finding_dict = finding.to_dict()
     elapsed_ms = round((time.perf_counter() - t0) * 1000, 2)
+
+    # Save to SQLite DB
+    db_manager.upsert_finding(finding_dict)
+
+    # Dispatch alerts if score is high
+    if finding.risk_score >= 55:
+        runner.dispatcher.process_finding(finding_dict)
 
     resp = {
         "status": "success",
         "target": target,
         "analyzed_at": datetime.now(timezone.utc).isoformat(),
-        "finding": finding.to_dict()
+        "finding": finding_dict
     }
 
     if include_debug:
@@ -412,7 +530,6 @@ def scan_target(req: ScanRequest):
 
 @app.post("/api/sweep/trigger", tags=["Sweep Management"])
 def trigger_sweep(quick: bool = False, background_tasks: BackgroundTasks = BackgroundTasks()):
-    """Triggers an automated multi-channel sweep in a background worker."""
     global sweep_state
     if sweep_state["status"] == "running":
         return {
@@ -433,12 +550,10 @@ def trigger_sweep(quick: bool = False, background_tasks: BackgroundTasks = Backg
 
 @app.get("/api/sweep/status", tags=["Sweep Management"])
 def get_sweep_status():
-    """Returns live progress percentage and status of the current or last sweep."""
     return sweep_state
 
 @app.get("/api/institutions", tags=["Registry"])
 def list_institutions():
-    """Returns official verified Dharamshalas and Ashrams (Ground Truth Directory)."""
     return {
         "total": len(runner.ecr.institutions),
         "brand": runner.ecr.brand_data,
@@ -447,12 +562,10 @@ def list_institutions():
 
 @app.post("/api/institutions", tags=["Registry"])
 def add_institution(inst: AddInstitutionRequest):
-    """Registers a new Dharamshala or Ashram in the verified ground-truth directory."""
     db_file = os.path.join(DATA_DIR, "verified_institutions.json")
     with open(db_file, "r", encoding="utf-8") as f:
         d = json.load(f)
 
-    # Check duplicate
     for existing in d.get("institutions", []):
         if existing["id"] == inst.id:
             raise HTTPException(status_code=400, detail=f"Institution '{inst.id}' already exists")
@@ -466,20 +579,8 @@ def add_institution(inst: AddInstitutionRequest):
 
 @app.get("/api/takedown/{host:path}/packet", tags=["Takedown"])
 def get_takedown_packet(host: str):
-    """Returns formatted legal filing packets (NCRP CyberCrime, Police Memo, Registrar, NPCI)."""
     clean_host = host.replace("https://", "").replace("http://", "").split("/")[0].strip().lower()
-    finding_data = None
-    if os.path.exists(FINDINGS_PATH):
-        try:
-            with open(FINDINGS_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                for item in data.get("findings", []):
-                    if item.get("host", "").lower() == clean_host:
-                        finding_data = item
-                        break
-        except Exception:
-            pass
-
+    finding_data = db_manager.get_finding(clean_host)
     if not finding_data:
         finding_data = runner.inspect_single_host(clean_host).to_dict()
 
@@ -492,20 +593,11 @@ def get_takedown_packet(host: str):
 
 @app.get("/api/export/csv", tags=["Export"])
 def export_csv():
-    """Generates and streams a forensic CSV report for Law Enforcement."""
-    findings = []
-    if os.path.exists(FINDINGS_PATH):
-        try:
-            with open(FINDINGS_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                findings = data.get("findings", [])
-        except Exception:
-            pass
-
+    findings = db_manager.get_all_findings(limit=2000)
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "Host", "Risk Score", "Risk Band", "Targeted Entity",
+        "Host", "Risk Score", "Risk Band", "Case Status", "Targeted Entity",
         "Server IP", "Hosting Provider", "ASN", "Country",
         "Registrar", "Registered On", "Scammer Helplines", "Scammer UPIs",
         "Detected Via", "Key Triggers"
@@ -519,6 +611,7 @@ def export_csv():
             f.get("host"),
             f.get("risk_score"),
             f.get("risk_band"),
+            f.get("case_status", "NEW"),
             f.get("targeted_institution_name", "General"),
             f.get("ip"),
             h.get("hosting_provider"),
@@ -541,23 +634,22 @@ def export_csv():
 
 @app.get("/api/export/json", tags=["Export"])
 def export_json():
-    """Streams full JSON database."""
-    if os.path.exists(FINDINGS_PATH):
-        with open(FINDINGS_PATH, "r", encoding="utf-8") as f:
-            content = f.read()
-        return Response(content=content, media_type="application/json")
-    return JSONResponse(content={"findings": []})
+    findings = db_manager.get_all_findings(limit=2000)
+    return JSONResponse(content={"findings": findings})
 
 # ---------------------------------------------------------------------------
-# Mount Static Dashboard & UI Route
+# Static Mounting & Dashboard Routes
 # ---------------------------------------------------------------------------
 DASHBOARD_DIR = os.path.join(BASE_DIR, "dashboard")
 if os.path.exists(DASHBOARD_DIR):
     app.mount("/static", StaticFiles(directory=DASHBOARD_DIR), name="static")
 
+EVIDENCE_DIR = os.path.join(BASE_DIR, "takedowns", "evidence_snapshots")
+os.makedirs(EVIDENCE_DIR, exist_ok=True)
+app.mount("/evidence", StaticFiles(directory=EVIDENCE_DIR), name="evidence")
+
 @app.get("/", response_class=HTMLResponse, tags=["Dashboard UI"])
 def serve_dashboard():
-    """Serves the live interactive dashboard UI."""
     index_file = os.path.join(DASHBOARD_DIR, "index.html")
     if os.path.exists(index_file):
         with open(index_file, "r", encoding="utf-8") as f:
@@ -566,7 +658,6 @@ def serve_dashboard():
 
 @app.get("/favicon.ico", include_in_schema=False)
 def serve_favicon():
-    """Serves the project favicon directly."""
     fav_path = os.path.join(DASHBOARD_DIR, "favicon.ico")
     if os.path.exists(fav_path):
         return FileResponse(fav_path)
@@ -594,7 +685,7 @@ if __name__ == "__main__":
             logger.warning(f"Port {requested_port} is currently in use. Auto-switched to available port {port}.")
 
     print(f"\n==================================================================")
-    print(f"🛡️ YatraDham Brand & Ashram Fraud Monitor Server v2.0")
+    print(f"🛡️ YatraDham Brand & Ashram Fraud Monitor Server v2.1")
     print(f"📡 API Docs: http://{host}:{port}/docs")
     print(f"🖥️ Live Dashboard: http://{host}:{port}/")
     print(f"🐞 Debug Mode: {'ENABLED' if DEBUG_MODE else 'DISABLED'}")

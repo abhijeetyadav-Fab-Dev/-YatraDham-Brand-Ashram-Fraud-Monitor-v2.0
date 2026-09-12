@@ -644,10 +644,12 @@ ul.threat-reasons li:before { content: "⚠️"; position: absolute; left: 0; fo
 
   <!-- Navigation Tabs -->
   <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('alerts')">🚨 Active Threat Alerts (<span id="alert-tab-count">0</span>)</button>
-    <button class="tab-btn" onclick="switchTab('register')">📋 Full Risk Register (<span id="register-tab-count">0</span>)</button>
-    <button class="tab-btn" onclick="switchTab('directory')">🏛 Verified Ashram Directory</button>
-    <button class="tab-btn" onclick="switchTab('owned')">🛡 Cleared Defensive Domains</button>
+    <button class="tab-btn active" onclick="switchTab('alerts', this)">🚨 Active Threat Alerts (<span id="alert-tab-count">0</span>)</button>
+    <button class="tab-btn" onclick="switchTab('register', this)">📋 Full Risk Register (<span id="register-tab-count">0</span>)</button>
+    <button class="tab-btn" onclick="switchTab('syndicates', this)">🕸️ Scammer Syndicates (<span id="syndicate-tab-count">0</span>)</button>
+    <button class="tab-btn" onclick="switchTab('verifier', this)">🔍 Pilgrim Safety Checker</button>
+    <button class="tab-btn" onclick="switchTab('directory', this)">🏛 Verified Ashram Directory</button>
+    <button class="tab-btn" onclick="switchTab('owned', this)">🛡 Cleared Defensive Domains</button>
   </div>
 
   <!-- Controls Bar -->
@@ -675,6 +677,7 @@ ul.threat-reasons li:before { content: "⚠️"; position: absolute; left: 0; fo
           <tr>
             <th>Host / Domain</th>
             <th>Risk Score</th>
+            <th>Case Status</th>
             <th>Targeted Entity</th>
             <th>Hosting Provider</th>
             <th>Location</th>
@@ -688,12 +691,53 @@ ul.threat-reasons li:before { content: "⚠️"; position: absolute; left: 0; fo
     </div>
   </div>
 
-  <!-- Tab 3: Verified Directory -->
+  <!-- Tab 3: Scammer Syndicates -->
+  <div id="view-syndicates" style="display:none">
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:var(--ink);">🕸️ Organized Fraud Syndicate Correlation Graph</h3>
+        <p style="font-size:12.5px;color:var(--dim);margin-top:2px;">Discovers cybercriminal rings operating multiple deceptive websites linked by shared mobile helplines, UPI VPAs, and tracking tags.</p>
+      </div>
+      <button class="action-btn primary" onclick="rebuildSyndicatesUI()">🔄 Re-cluster Threat Graph</button>
+    </div>
+    <div id="syndicates-container"></div>
+  </div>
+
+  <!-- Tab 4: Pilgrim Safety Verifier Widget -->
+  <div id="view-verifier" style="display:none">
+    <div class="panel" style="padding:28px;max-width:800px;margin:0 auto;border:1px solid var(--line-strong);">
+      <div style="text-align:center;margin-bottom:20px;">
+        <span style="font-size:38px;">🛡️</span>
+        <h2 style="font-size:20px;font-weight:800;color:var(--ink);margin:8px 0 4px 0;">Verify Channel Before You Pay</h2>
+        <p style="font-size:13px;color:var(--dim);max-width:600px;margin:0 auto;">
+          Official fraud-prevention protocol by <strong>YatraDham.Org</strong>. Verify any booking helpline, WhatsApp number, UPI ID, or URL against official verified temple registries and active fraud reports before transferring money.
+        </p>
+      </div>
+      
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <input type="text" id="verifier-input" class="search-box" style="flex:1;font-size:14px;padding:12px 16px;" placeholder="Enter WhatsApp Number (+91...), UPI ID (name@ybl), or Website URL..." onkeydown="if(event.key==='Enter') runChannelVerification()">
+        <button class="action-btn primary" style="padding:12px 24px;font-size:14px;" onclick="runChannelVerification()">Verify Channel</button>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:22px;flex-wrap:wrap;">
+        <span style="font-size:11.5px;color:var(--dim);">Quick Test Samples:</span>
+        <a href="javascript:void(0)" onclick="testVerifyQuery('yatradham.org')" style="font-size:11.5px;color:var(--saffron);text-decoration:underline;">yatradham.org</a>
+        <span style="color:var(--dim)">·</span>
+        <a href="javascript:void(0)" onclick="testVerifyQuery('+91 82956 50742')" style="font-size:11.5px;color:var(--saffron);text-decoration:underline;">+91 82956 50742 (Salasar)</a>
+        <span style="color:var(--dim)">·</span>
+        <a href="javascript:void(0)" onclick="testVerifyQuery('bhujvishrantibhavan.online')" style="font-size:11.5px;color:var(--saffron);text-decoration:underline;">bhujvishrantibhavan.online</a>
+      </div>
+
+      <div id="verifier-result" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Tab 5: Verified Directory -->
   <div id="view-directory" style="display:none">
     <div class="panel" id="directory-container" style="padding:20px;"></div>
   </div>
 
-  <!-- Tab 4: Cleared Owned -->
+  <!-- Tab 6: Cleared Owned -->
   <div id="view-owned" style="display:none">
     <div class="panel" id="owned-container"></div>
   </div>
@@ -704,13 +748,23 @@ ul.threat-reasons li:before { content: "⚠️"; position: absolute; left: 0; fo
 <div class="modal-overlay" id="dossier-modal" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <h3 id="modal-title" style="font-size:15px;font-weight:700;">Legal Takedown Dossier</h3>
+      <div>
+        <h3 id="modal-title" style="font-size:15px;font-weight:700;">Legal Takedown Dossier</h3>
+        <span id="modal-subtitle" style="font-size:11.5px;color:var(--dim);"></span>
+      </div>
       <button style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;" onclick="closeModalDirect()">✕</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
-    <div class="modal-footer">
-      <button class="action-btn primary" onclick="copyModalContent()">📋 Copy to Clipboard</button>
-      <button class="action-btn" onclick="closeModalDirect()">Close</button>
+    <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="action-btn" id="btn-dispatch-modal" onclick="dispatchAbuseNoticeFromModal()" style="background:#dc2626;color:#fff;font-weight:700;">🚀 1-Click Dispatch Notice (SMTP)</button>
+        <button class="action-btn" id="btn-safebrowsing-modal" onclick="reportSafeBrowsingFromModal()" style="color:#38bdf8;">🛡️ Submit Safe Browsing</button>
+        <button class="action-btn" id="btn-evidence-modal" onclick="captureEvidenceFromModal()" style="color:#fbbf24;">📸 Court Evidence (PNG)</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="action-btn primary" onclick="copyModalContent()">📋 Copy Dossier</button>
+        <button class="action-btn" onclick="closeModalDirect()">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -934,12 +988,34 @@ function renderThreatCard(r) {
       <summary>
         <span class="caret">▶</span>
         <span class="badge b-${r.risk_band}">${r.risk_score} · ${r.risk_band}</span>
+        <span class="badge" style="background:#1e293b;color:#cbd5e1;border:1px solid #475569;font-size:11px;">${r.case_status || 'NEW'}</span>
         <span class="host-cell">${r.host}</span>
         ${r.is_new ? '<span class="new-tag">NEW</span>' : ''}
         <span style="font-size:12px;color:var(--saffron);margin-left:8px;">🎯 Target: ${instName}</span>
         <span style="font-size:12px;color:var(--dim);margin-left:auto;">${h.hosting_provider || ''} (${h.host_country || '—'})</span>
       </summary>
       <div class="threat-body">
+
+        <!-- Case Lifecycle & Quick Actions -->
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;color:var(--dim);font-weight:600;">Case Status:</span>
+            <select onchange="changeHostStatus('${r.host}', this.value)" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line);padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;">
+              <option value="NEW" ${(!r.case_status || r.case_status === 'NEW') ? 'selected' : ''}>🔵 NEW</option>
+              <option value="UNDER_REVIEW" ${r.case_status === 'UNDER_REVIEW' ? 'selected' : ''}>🟡 UNDER REVIEW</option>
+              <option value="TAKEDOWN_SENT" ${r.case_status === 'TAKEDOWN_SENT' ? 'selected' : ''}>🟠 TAKEDOWN SENT</option>
+              <option value="BLOCKED" ${r.case_status === 'BLOCKED' ? 'selected' : ''}>🔴 BLOCKED</option>
+              <option value="RESOLVED" ${r.case_status === 'RESOLVED' ? 'selected' : ''}>🟢 RESOLVED</option>
+              <option value="WHITELISTED" ${r.case_status === 'WHITELISTED' ? 'selected' : ''}>⚪ WHITELISTED</option>
+            </select>
+            ${r.fir_number ? `<span style="font-size:11px;color:var(--saffron);margin-left:6px;">FIR: ${r.fir_number}</span>` : ''}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="action-btn" onclick="quickDispatchAbuse('${r.host}')" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 10px;font-weight:700;">🚀 1-Click Dispatch</button>
+            <button class="action-btn" onclick="quickSafeBrowsing('${r.host}')" style="color:#38bdf8;font-size:11px;padding:5px 10px;">🛡️ Safe Browsing</button>
+            <button class="action-btn" onclick="quickEvidenceSnapshot('${r.host}')" style="color:#fbbf24;font-size:11px;padding:5px 10px;">📸 Evidence Card</button>
+          </div>
+        </div>
         
         <!-- Discrepancy comparison -->
         <div class="comparison-grid">
@@ -1002,6 +1078,7 @@ function renderRegister() {
       <tr data-host="${r.host}" data-band="${r.risk_band}" data-score="${r.risk_score}">
         <td class="host-cell">${r.host} ${r.is_new && r.risk_score >= 55 ? '<span class="new-tag">NEW</span>' : ''}</td>
         <td><span class="badge b-${r.risk_band}">${r.risk_score} · ${r.risk_band}</span></td>
+        <td class="mono"><span class="badge" style="background:#1e293b;color:#cbd5e1;font-size:11px;">${r.case_status || 'NEW'}</span></td>
         <td style="color:var(--saffron);font-weight:600;">${r.targeted_institution_name || '—'}</td>
         <td class="mono">${(h.hosting_provider || '—').slice(0, 24)}</td>
         <td class="mono">${h.host_country || '—'}</td>
@@ -1012,7 +1089,7 @@ function renderRegister() {
         </td>
       </tr>
     `;
-  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--dim);">No records found.</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--dim);">No records found.</td></tr>';
 }
 
 function renderDirectory() {
@@ -1064,15 +1141,19 @@ function renderOwned() {
   `;
 }
 
-function switchTab(tab) {
+function switchTab(tab, el) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  if (el) el.classList.add('active');
   document.getElementById('view-alerts').style.display = tab === 'alerts' ? 'block' : 'none';
   document.getElementById('view-register').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('view-syndicates').style.display = tab === 'syndicates' ? 'block' : 'none';
+  document.getElementById('view-verifier').style.display = tab === 'verifier' ? 'block' : 'none';
   document.getElementById('view-directory').style.display = tab === 'directory' ? 'block' : 'none';
   document.getElementById('view-owned').style.display = tab === 'owned' ? 'block' : 'none';
   document.getElementById('controls-bar').style.display = (tab === 'alerts' || tab === 'register') ? 'flex' : 'none';
+  if (tab === 'syndicates') loadSyndicates();
+  if (tab === 'verifier') setTimeout(() => document.getElementById('verifier-input')?.focus(), 50);
 }
 
 function setBandFilter(band, el) {
@@ -1258,36 +1339,301 @@ async function pollSweepStatus() {
   }
 }
 
-// Modal Handlers
+// Modal Handlers & Enterprise Operations
+let currentModalHost = '';
+let currentModalUrl = '';
+
 function getFinding(host) {
   return (globalData.findings || []).find(f => f.host === host);
 }
 
 function showNcrpModal(host) {
+  currentModalHost = host;
+  currentModalUrl = host.startsWith('http') ? host : `https://${host}/`;
   const f = getFinding(host);
   if (!f) return;
   const t = f.takedown || {};
   document.getElementById('modal-title').textContent = 'NCRP CyberCrime Filing Dossier: ' + host;
+  document.getElementById('modal-subtitle').textContent = `Target: ${host} · Score: ${f.risk_score}/100 · Status: ${f.case_status || 'NEW'}`;
   document.getElementById('modal-body').textContent = t.police_memo ? t.police_memo + '\n\n' + t.registrar_abuse_notice : JSON.stringify(f, null, 2);
   document.getElementById('dossier-modal').style.display = 'grid';
 }
 
 function showPoliceMemo(host) {
+  currentModalHost = host;
+  currentModalUrl = host.startsWith('http') ? host : `https://${host}/`;
   const f = getFinding(host);
   if (!f) return;
   const t = f.takedown || {};
   document.getElementById('modal-title').textContent = 'Incident Escalation Memorandum: ' + host;
+  document.getElementById('modal-subtitle').textContent = `Target: ${host} · Score: ${f.risk_score}/100`;
   document.getElementById('modal-body').textContent = t.police_memo || 'Memo pending generation';
   document.getElementById('dossier-modal').style.display = 'grid';
 }
 
 function showNpciFreeze(host) {
+  currentModalHost = host;
+  currentModalUrl = host.startsWith('http') ? host : `https://${host}/`;
   const f = getFinding(host);
   if (!f) return;
   const t = f.takedown || {};
   document.getElementById('modal-title').textContent = 'NPCI / Bank Account Freeze Request: ' + host;
+  document.getElementById('modal-subtitle').textContent = `Target: ${host}`;
   document.getElementById('modal-body').textContent = t.npci_bank_freeze_request || 'No UPI handles logged';
   document.getElementById('dossier-modal').style.display = 'grid';
+}
+
+async function changeHostStatus(host, newStatus) {
+  if (!isBackendLive) {
+    showToast(`Status updated to ${newStatus} (Local)`);
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/cases/${encodeURIComponent(host)}/status`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ status: newStatus, note: `Status updated to ${newStatus} via dashboard` })
+    });
+    if (res.ok) {
+      showToast(`✓ Case status updated to ${newStatus}`);
+      const item = (globalData.findings || []).find(f => f.host === host);
+      if (item) item.case_status = newStatus;
+      renderRegister();
+    }
+  } catch (e) {
+    alert('Failed to update status: ' + e);
+  }
+}
+
+async function quickDispatchAbuse(host) {
+  currentModalHost = host;
+  await dispatchAbuseNoticeFromModal();
+}
+
+async function quickSafeBrowsing(host) {
+  currentModalHost = host;
+  await reportSafeBrowsingFromModal();
+}
+
+async function quickEvidenceSnapshot(host) {
+  currentModalHost = host;
+  showNcrpModal(host);
+  await captureEvidenceFromModal();
+}
+
+async function dispatchAbuseNoticeFromModal() {
+  if (!currentModalHost) return;
+  const btn = document.getElementById('btn-dispatch-modal');
+  if (btn) btn.disabled = true;
+  showToast('🚀 Dispatching formal abuse notice via SMTP...');
+
+  try {
+    const res = await fetch(`${API_BASE}/api/takedown/dispatch-email`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ host: currentModalHost, dry_run: false })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(`✅ Abuse Notice Dispatched!\n\nStatus: ${data.status.toUpperCase()}\nRecipient: ${data.recipient}\nCC: ${data.cc || 'legal@yatradham.org'}\nSubject: ${data.subject}\n\nCase status has been automatically updated to TAKEDOWN_SENT.`);
+      changeHostStatus(currentModalHost, 'TAKEDOWN_SENT');
+    } else {
+      alert(`⚠️ Notice result: ${data.error || data.message || 'Check SMTP configuration'}`);
+    }
+  } catch (e) {
+    alert('Error dispatching notice: ' + e);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function reportSafeBrowsingFromModal() {
+  const url = currentModalHost.startsWith('http') ? currentModalHost : `https://${currentModalHost}/`;
+  try {
+    const res = await fetch(`${API_BASE}/api/takedown/report-safebrowsing`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (data.google_safebrowsing_submission_url) {
+      window.open(data.google_safebrowsing_submission_url, '_blank');
+    }
+    if (data.microsoft_smartscreen_url) {
+      window.open(data.microsoft_smartscreen_url, '_blank');
+    }
+    showToast('Opened Google Safe Browsing and Microsoft SmartScreen portals');
+  } catch (e) {
+    window.open(`https://safebrowsing.google.com/safebrowsing/report_phish/?url=${encodeURIComponent(url)}`, '_blank');
+  }
+}
+
+async function captureEvidenceFromModal() {
+  if (!currentModalHost) return;
+  showToast('📸 Generating court exhibit card & SHA-256 integrity hash...');
+  try {
+    const res = await fetch(`${API_BASE}/api/takedown/evidence-snapshot`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ host: currentModalHost })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      const evid = data.evidence;
+      const cardUrl = evid.visual_card_url;
+      const body = document.getElementById('modal-body');
+      body.innerHTML = `
+        <div style="text-align:center;margin-bottom:16px;">
+          <h4 style="color:#fbbf24;margin-bottom:8px;font-size:14px;">📸 Court-Admissible Forensic Exhibit Generated</h4>
+          ${cardUrl ? `
+            <a href="${cardUrl}" target="_blank" title="Click to view full size">
+              <img src="${cardUrl}" style="max-width:100%;border-radius:8px;border:1px solid #475569;box-shadow:0 8px 16px rgba(0,0,0,0.5);">
+            </a>
+          ` : ''}
+          <div style="font-size:11px;color:#94a3b8;margin-top:8px;">SHA-256 Integrity Hash: <code>${evid.sha256_html_hash}</code></div>
+          <div style="font-size:11px;color:#10b981;margin-top:2px;">Chain of Custody Verified · NCRP & CERT-In Compliant</div>
+        </div>
+        <hr style="border-color:#334155;margin:16px 0;">
+        <pre style="white-space:pre-wrap;font-family:inherit;">${JSON.stringify(evid, null, 2)}</pre>
+      `;
+      showToast('✓ Forensic evidence card generated!');
+    }
+  } catch (e) {
+    alert('Error generating evidence card: ' + e);
+  }
+}
+
+async function loadSyndicates() {
+  const container = document.getElementById('syndicates-container');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--dim);padding:24px;text-align:center;">Analyzing threat indicators and clustering scammer syndicates...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/syndicates`);
+    if (!res.ok) throw new Error('API returned ' + res.status);
+    const data = await res.json();
+    const syndicates = data.syndicates || [];
+    document.getElementById('syndicate-tab-count').textContent = syndicates.length;
+
+    if (!syndicates.length) {
+      container.innerHTML = `
+        <div class="panel" style="padding:32px;text-align:center;color:var(--dim);">
+          <span style="font-size:32px;">🛡️</span>
+          <div style="font-weight:700;color:var(--ink);margin:8px 0;">No Multi-Domain Criminal Syndicates Detected</div>
+          <div>All currently flagged rogue entities appear to be operating isolated infrastructure without shared phone numbers or payment VPAs.</div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;">
+        ${syndicates.map(s => `
+          <div class="panel" style="padding:18px;border:1px solid #ef4444;background:rgba(239,68,68,0.03);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <span class="badge" style="background:#ef4444;color:#fff;font-size:11px;font-weight:700;">${s.id}</span>
+                <span style="font-size:11px;color:var(--dim);margin-left:6px;">${s.common_identifier_type}</span>
+                <h4 style="font-size:15px;font-weight:700;color:var(--ink);margin-top:6px;">${s.name}</h4>
+              </div>
+              <span class="badge b-CRITICAL" style="font-size:12px;">Total Risk: ${s.total_risk_score}</span>
+            </div>
+
+            <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px;">
+              Shared Threat Key: <strong style="color:var(--saffron);font-family:'JetBrains Mono',monospace;">${s.common_identifier_value}</strong>
+            </div>
+
+            <div style="font-size:12px;color:var(--dim);margin-bottom:10px;">
+              Linked Impersonating Domains (${s.domain_count}):
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+              ${(s.domains || []).map(d => `
+                <a href="https://${d}" target="_blank" style="background:var(--panel2);border:1px solid var(--line);padding:3px 8px;border-radius:6px;font-size:11.5px;font-family:'JetBrains Mono',monospace;color:#f87171;">${d}</a>
+              `).join('')}
+            </div>
+
+            <button class="action-btn primary" onclick="showNcrpModal('${s.domains[0]}')" style="font-size:11.5px;padding:6px 12px;width:100%;">
+              📋 File Comprehensive Syndicate FIR (NCRP)
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div class="panel" style="padding:20px;color:var(--crit);">Could not load syndicates: ${e}</div>`;
+  }
+}
+
+async function rebuildSyndicatesUI() {
+  showToast('🔄 Re-running syndicate clustering algorithm...');
+  try {
+    await fetch(`${API_BASE}/api/syndicates/rebuild`, { method: 'POST' });
+    loadSyndicates();
+    showToast('✓ Syndicate threat graph re-clustered!');
+  } catch (e) {
+    alert('Re-cluster error: ' + e);
+  }
+}
+
+function testVerifyQuery(val) {
+  document.getElementById('verifier-input').value = val;
+  runChannelVerification();
+}
+
+async function runChannelVerification() {
+  const q = document.getElementById('verifier-input').value.trim();
+  const out = document.getElementById('verifier-result');
+  if (!q) return;
+
+  out.style.display = 'block';
+  out.innerHTML = '<div style="text-align:center;color:var(--dim);padding:14px;">Cross-referencing verified databases and fraud campaign telemetry...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/verify-channel?query=${encodeURIComponent(q)}`);
+    const data = await res.json();
+
+    const isSafe = data.status === 'safe';
+    const isDanger = data.status === 'danger';
+    const borderColor = isSafe ? '#10b981' : isDanger ? '#ef4444' : '#eab308';
+    const bg = isSafe ? 'rgba(16,185,129,0.06)' : isDanger ? 'rgba(239,68,68,0.06)' : 'rgba(234,179,8,0.06)';
+
+    out.innerHTML = `
+      <div style="border:2px solid ${borderColor};background:${bg};border-radius:12px;padding:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <span style="font-size:16px;font-weight:800;color:${borderColor};">${data.badge}</span>
+          <span style="font-size:12px;color:var(--dim);font-family:'JetBrains Mono',monospace;">Tested: ${data.query}</span>
+        </div>
+        <div style="font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:10px;">${data.advice}</div>
+        
+        ${data.matches && data.matches.length ? `
+          <div style="margin-top:14px;background:rgba(0,0,0,0.25);border-radius:8px;padding:12px;">
+            <div style="font-size:11.5px;color:var(--dim);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Database Match Details:</div>
+            ${typeof data.matches[0] === 'string' ? `
+              <ul style="margin:0;padding-left:18px;font-size:12.5px;color:#cbd5e1;">
+                ${data.matches.map(m => `<li>${m}</li>`).join('')}
+              </ul>
+            ` : `
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                ${data.matches.map(m => `
+                  <div style="font-size:12.5px;color:#fca5a5;">
+                    • <strong>${m.type}</strong>: <code>${m.entity}</code> (Impersonating: ${m.impersonating} · Score: ${m.risk_score}/100)
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        ` : ''}
+
+        ${isDanger ? `
+          <div style="margin-top:14px;display:flex;gap:8px;">
+            <button class="action-btn primary" onclick="showNcrpModal('${q}')" style="background:#dc2626;">📋 Escalate & File Cyber Police Report</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  } catch (e) {
+    out.innerHTML = `<div style="color:var(--crit);padding:14px;">Verification error: ${e}</div>`;
+  }
 }
 
 function openRegistrarMail(host, email) {
@@ -1310,6 +1656,13 @@ function copyModalContent() {
   const toast = document.getElementById('toast');
   toast.style.display = 'block';
   setTimeout(() => toast.style.display = 'none', 2000);
+}
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 2800);
 }
 </script>
 </body>

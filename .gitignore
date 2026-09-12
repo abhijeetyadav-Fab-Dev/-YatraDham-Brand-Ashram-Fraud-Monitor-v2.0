@@ -7,4 +7,13 @@ env/
 venv/
 .venv/
 *.log
+*.db
+*.sqlite3
 .DS_Store
+takedowns/takedown_*test*
+takedowns/dispatched_notices/*.txt
+takedowns/dispatched_notices/*.json
+!takedowns/dispatched_notices/.gitkeep
+takedowns/evidence_snapshots/*.png
+takedowns/evidence_snapshots/*.json
+!takedowns/evidence_snapshots/.gitkeep

@@ -2,7 +2,7 @@
 Takedown Dossier & Law Enforcement Packet Generator.
 Generates fully compliant filing packets for the National Cyber Crime Reporting Portal (cybercrime.gov.in),
 Bhavnagar/Gujarat Cyber Crime Police Cell, ICANN Registrar Abuse desks, NIXI (.IN Registry),
-and NPCI / Bank Mule UPI freeze requests.
+DoT Chakshu Portal (Sanchar Saathi for SIM/IMEI blocking), and NPCI / Bank Mule UPI freeze requests.
 """
 from typing import Dict, Any, List
 from datetime import datetime, timezone
@@ -119,7 +119,7 @@ class TakedownGenerator:
             f"This constitutes criminal fraud under Sections 66C & 66D of the IT Act 2000 and Section 318(4) of the Bharatiya Nyaya Sanhita. "
             f"A formal criminal complaint has also been logged with the National Cyber Crime Reporting Portal (cybercrime.gov.in).\n\n"
             f"Failure to act upon this verified abuse report may result in secondary liability under intermediary guidelines. "
-            f"Please confirm domain suspension by reply to info@yatradham.org.\n\n"
+            f"Please confirm domain suspension by reply to legal@yatradham.org.\n\n"
             f"Sincerely,\n"
             f"Digital Trust & Legal Compliance Desk\n"
             f"YatraDham.org (YatraDham E-Services Pvt Ltd)\n"
@@ -156,7 +156,25 @@ class TakedownGenerator:
                 f"via PhonePe/GooglePay/Paytm. We request immediate freeze on these accounts under RBI and NPCI Anti-Fraud Directives."
             )
 
-        # 7. Google Safe Browsing Link
+        # 7. Chakshu DoT Telecom Blacklisting Format
+        chakshu_report = ""
+        if unauth_phones:
+            chakshu_report = (
+                f"DEPARTMENT OF TELECOMMUNICATIONS (DoT) — SANCHAR SAATHI / CHAKSHU INCIDENT REPORT\n"
+                f"Report Category: Suspected Cyber Financial Fraud via Mobile Communications / WhatsApp\n"
+                f"Reporting Agency: YatraDham.Org Digital Trust & Safety Desk\n"
+                f"Report Date: {now_ist}\n\n"
+                f"SUSPECT FRAUDULENT MOBILE NUMBERS IDENTIFIED:\n"
+                + "\n".join([f"- Mobile Number: {ph} | Context: Listed as fake Ashram reservation manager on {target_url}" for ph in unauth_phones])
+                + f"\n\nMODUS OPERANDI:\n"
+                f"These numbers are actively engaged in defrauding devotees by soliciting advance booking tokens for {inst_name}. "
+                f"Upon receipt of payment, devotees are blocked and booking is never honored.\n\n"
+                f"STATUTORY REQUEST TO DoT / TSPs:\n"
+                f"1. Immediate disconnection of all reported MSISDNs under Section 19 of the Telecommunications Act 2023.\n"
+                f"2. Blocking of associated IMEI device IDs across all Indian telecom networks to prevent SIM swapping."
+            )
+
+        # 8. Google Safe Browsing Link
         safebrowsing_url = f"https://safebrowsing.google.com/safebrowsing/report_phish/?url={quote_plus(target_url)}"
 
         return TakedownDossier(
@@ -165,6 +183,7 @@ class TakedownGenerator:
             registrar_abuse_notice=registrar_notice,
             nixi_notice=nixi_notice,
             npci_bank_freeze_request=npci_notice,
+            chakshu_dot_report=chakshu_report,
             google_safebrowsing_url=safebrowsing_url,
             target_summary=f"{host} ({inst_name} - Score {score}/100 {band})"
         )

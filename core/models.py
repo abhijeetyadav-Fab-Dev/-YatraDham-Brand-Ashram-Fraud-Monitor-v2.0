@@ -21,6 +21,14 @@ class RiskBand(str, Enum):
     LOW = "LOW"                # 1 - 34: General mentions / low relevance
     BRAND_OWNED = "BRAND-OWNED"# 0: Verified legitimate defensive registration (301 to yatradham.org)
 
+class CaseStatus(str, Enum):
+    NEW = "NEW"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    TAKEDOWN_SENT = "TAKEDOWN_SENT"
+    BLOCKED = "BLOCKED"
+    RESOLVED = "RESOLVED"
+    WHITELISTED = "WHITELISTED"
+
 @dataclass
 class EvidenceItem:
     url: str
@@ -84,6 +92,7 @@ class TakedownDossier:
     registrar_abuse_notice: str = ""
     nixi_notice: str = ""
     npci_bank_freeze_request: str = ""
+    chakshu_dot_report: str = ""
     google_safebrowsing_url: str = ""
     target_summary: str = ""
 
@@ -104,6 +113,10 @@ class FraudFinding:
     takedown: TakedownDossier = field(default_factory=TakedownDossier)
     targeted_institution_id: Optional[str] = None
     targeted_institution_name: Optional[str] = None
+    case_status: CaseStatus = CaseStatus.NEW
+    case_notes: List[Dict[str, Any]] = field(default_factory=list)
+    fir_number: Optional[str] = None
+    syndicate_id: Optional[str] = None
     first_detected: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
     last_seen: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
     is_new: bool = True
@@ -112,4 +125,5 @@ class FraudFinding:
         d = asdict(self)
         d["threat_category"] = self.threat_category.value
         d["risk_band"] = self.risk_band.value
+        d["case_status"] = self.case_status.value
         return d
